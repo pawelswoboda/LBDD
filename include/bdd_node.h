@@ -1,0 +1,120 @@
+#pragma once
+
+#include <random>
+#include <cassert>
+#include <vector>
+
+namespace BDD {
+
+constexpr static std::size_t logvarsize = 41;
+constexpr static std::size_t maxvarsize = static_cast<std::size_t>(1) << logvarsize;
+constexpr static std::size_t unique_table_hash_size = 22;
+constexpr static std::size_t hashtablesize = static_cast<std::size_t>(1) << unique_table_hash_size;
+
+class node_struct
+{
+    public:
+    //~node_struct();
+    //node_struct(node_struct&& o);
+
+    void init_new_node(std::size_t v, node_struct* l, node_struct* h);
+    std::size_t hash_code() const;
+    void mark();
+    void unmark();
+    bool marked() const;
+
+    void recursively_revive();
+    void recursively_kill();
+    void deref();
+
+    template<typename ITERATOR>
+    bool evaluate(ITERATOR var_begin, ITERATOR var_end);
+
+    size_t nr_nodes();
+    std::vector<node_struct*> nodes_postorder();
+    std::vector<size_t> variables();
+
+    void init_botsink();
+    bool is_botsink() const;
+    void init_topsink();
+    bool is_topsink() const;
+    bool is_terminal() const { return is_topsink() || is_botsink(); }
+
+	node_struct* lo = nullptr;
+    node_struct* hi = nullptr;
+    // TODO: make enum
+    node_struct* next_available = nullptr;
+    std::size_t index : logvarsize;
+    std::size_t hash_key : unique_table_hash_size; // make const
+    std::size_t marked_ : 1;
+    //std::size_t large_subtree : 1; // subtree is large enough so that recursively visiting nodes would exceed stack
+	int xref = 0;
+
+    constexpr static std::size_t botsink_index = std::pow(2,logvarsize)-1;
+    constexpr static std::size_t topsink_index = std::pow(2,logvarsize)-2;
+
+    template<typename STREAM>
+        void print(STREAM& s);
+
+    private:
+    size_t nr_nodes_impl();
+    void variables_impl(std::vector<size_t>&);
+    void nodes_postorder_impl(std::vector<node_struct*>&);
+
+    template<typename STREAM>
+        void print_rec(STREAM& s);
+};
+
+using node = node_struct;
+
+template<typename ITERATOR>
+bool node_struct::evaluate(ITERATOR var_begin, ITERATOR var_end)
+{
+    if(this->is_botsink())
+        return false;
+    if(this->is_topsink())
+        return true;
+    assert(index < std::distance(var_begin, var_end));
+    const bool x = *(var_begin + this->index);
+    if(x == true)
+        return hi->evaluate(var_begin, var_end);
+    else
+        return lo->evaluate(var_begin, var_end);
+
+}
+
+template<typename STREAM>
+void node_struct::print(STREAM& s)
+{
+    s << "digraph BDD {\n";
+    print_rec(s);
+    unmark();
+    s << "}\n";
+}
+
+template<typename STREAM>
+void node_struct::print_rec(STREAM& s)
+{
+    if(is_terminal())
+        return;
+
+    assert(marked_ == 0);
+    marked_ = 1;
+    auto node_id = [](node* p) -> std::string {
+        if(p->is_botsink())
+            return std::string("bot");
+        if(p->is_topsink())
+            return std::string("top");
+        return std::string("\"") + std::to_string(p->index) + "," + std::to_string(size_t(p)) + "\"";
+    };
+
+    s << node_id(this) << " -> " << node_id(lo) << " [label=\"0\"]\n";
+    s << node_id(this) << " -> " << node_id(hi) << " [label=\"1\"]\n";
+
+    if(lo->marked_ == 0)
+        lo->print_rec(s);
+    if(hi->marked_ == 0)
+        hi->print_rec(s);
+}
+
+}

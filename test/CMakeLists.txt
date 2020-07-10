@@ -1,0 +1,27 @@
+add_executable(test_bdd_node_cache test_bdd_node_cache.cpp)
+target_link_libraries(test_bdd_node_cache bdd_node_cache)
+add_test(test_bdd_node_cache test_bdd_node_cache)
+
+add_executable(test_unique_table_page_cache test_unique_table_page_cache.cpp)
+target_link_libraries(test_unique_table_page_cache bdd_unique_table)
+add_test(test_unique_table_page_cache test_unique_table_page_cache)
+
+add_executable(test_variable_addition test_variable_addition.cpp)
+target_link_libraries(test_variable_addition bdd_mgr bdd)
+add_test(test_variable_addition test_variable_addition)
+
+add_executable(test_bdd_projection test_bdd_projection.cpp)
+target_link_libraries(test_bdd_projection bdd)
+add_test(test_bdd_projection test_bdd_projection)
+
+add_executable(test_bdd_and_or test_bdd_and_or.cpp)
+target_link_libraries(test_bdd_and_or bdd)
+add_test(test_bdd_and_or test_bdd_and_or)
+
+add_executable(test_ite test_ite.cpp)
+target_link_libraries(test_ite bdd)
+add_test(test_ite test_ite)
+
+add_executable(test_mrf_chain test_mrf_chain.cpp)
+target_link_libraries(test_mrf_chain bdd)
+add_test(test_mrf_chain test_mrf_chain)
