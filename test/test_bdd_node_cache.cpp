@@ -6,7 +6,7 @@ using namespace BDD;
 
 int main(int argc, char** argv)
 {
-    bdd_node_cache cache;
+    bdd_node_cache cache(nullptr);
     std::vector<node*> v;
     const std::size_t nr_nodes_to_insert = 10000;
     for(std::size_t i=0; i<nr_nodes_to_insert; ++i)

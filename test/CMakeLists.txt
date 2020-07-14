@@ -1,9 +1,9 @@
 add_executable(test_bdd_node_cache test_bdd_node_cache.cpp)
-target_link_libraries(test_bdd_node_cache bdd_node_cache)
+target_link_libraries(test_bdd_node_cache bdd)
 add_test(test_bdd_node_cache test_bdd_node_cache)
 
 add_executable(test_unique_table_page_cache test_unique_table_page_cache.cpp)
-target_link_libraries(test_unique_table_page_cache bdd_unique_table)
+target_link_libraries(test_unique_table_page_cache bdd)
 add_test(test_unique_table_page_cache test_unique_table_page_cache)
 
 add_executable(test_variable_addition test_variable_addition.cpp)

@@ -12,8 +12,8 @@ namespace BDD {
     {
         initialize_unique_table();
         //proj = unique_find(index, bdd_mgr_.get_node_cache().botsink(), bdd_mgr_.get_node_cache().topsink());
-        bdd_mgr_.get_node_cache().botsink()->xref++;
-        bdd_mgr_.get_node_cache().topsink()->xref++; 
+        //bdd_mgr_.get_node_cache().botsink()->xref++;
+        //bdd_mgr_.get_node_cache().topsink()->xref++; 
     }
 
     var_struct::var_struct(var_struct&& o)
@@ -165,10 +165,11 @@ namespace BDD {
         }
     }
 
-    node* var_struct::unique_find(const std::size_t index, node* l,node* h)
+    node* var_struct::unique_find(const std::size_t index, node* l, node* h)
     {
+        assert(index < l->find_bdd_mgr()->nr_variables()); 
         if(l==h) {
-            l->xref--;
+            //l->xref--;
             return l;
         }
 
@@ -178,15 +179,15 @@ namespace BDD {
         {
             if(p->xref < 0)
             {
-                dead_nodes--;
-                p->xref= 0;
+                //dead_nodes--;
+                //p->xref= 0;
                 return p;
             }
             else 
             {
-                l->xref--;
-                h->xref--;
-                p->xref++;
+                //l->xref--;
+                //h->xref--;
+                //p->xref++;
                 return p;
             }
         }
@@ -195,6 +196,7 @@ namespace BDD {
             // garbage collection
             if((++timer % timerinterval) == 0 && (dead_nodes > unique_table_size()/dead_fraction))
             {
+                assert(false);
                 // TODO: implement
                 //collect_garbage(0);
                 return unique_find(l, h);

@@ -14,10 +14,12 @@ struct bdd_node_page
     std::unique_ptr<bdd_node_page> next;
 };
 
+class bdd_mgr;
+
 class bdd_node_cache
 {
     public:
-        bdd_node_cache();
+        bdd_node_cache(bdd_mgr* mgr);
         node* reserve_node(void);
         void free_node(node*p);
         std::size_t nr_nodes() const { return total_nodes; }

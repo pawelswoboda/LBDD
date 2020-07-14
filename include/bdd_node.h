@@ -11,6 +11,8 @@ constexpr static std::size_t maxvarsize = static_cast<std::size_t>(1) << logvars
 constexpr static std::size_t unique_table_hash_size = 22;
 constexpr static std::size_t hashtablesize = static_cast<std::size_t>(1) << unique_table_hash_size;
 
+class bdd_mgr;
+
 class node_struct
 {
     public:
@@ -34,38 +36,76 @@ class node_struct
     std::vector<node_struct*> nodes_postorder();
     std::vector<size_t> variables();
 
-    void init_botsink();
+    void init_botsink(bdd_mgr* mgr);
     bool is_botsink() const;
-    void init_topsink();
+    void init_topsink(bdd_mgr* mgr);
     bool is_topsink() const;
     bool is_terminal() const { return is_topsink() || is_botsink(); }
 
-	node_struct* lo = nullptr;
-    node_struct* hi = nullptr;
+    union { node_struct* lo; bdd_mgr* bdd_mgr_1; node_struct* next_available; };
+    union { node_struct* hi; bdd_mgr* bdd_mgr_2; };
+	//node_struct* lo = nullptr;
+    //node_struct* hi = nullptr;
     // TODO: make enum
-    node_struct* next_available = nullptr;
+    //node_struct* next_available = nullptr;
+    
+    // TODO: possibly put away with hash_key field and combine index, marked and xref into one 64 bit field.
+    
     std::size_t index : logvarsize;
     std::size_t hash_key : unique_table_hash_size; // make const
     std::size_t marked_ : 1;
     //std::size_t large_subtree : 1; // subtree is large enough so that recursively visiting nodes would exceed stack
 	int xref = 0;
 
-    constexpr static std::size_t botsink_index = std::pow(2,logvarsize)-1;
-    constexpr static std::size_t topsink_index = std::pow(2,logvarsize)-2;
+    constexpr static size_t botsink_index = std::pow(2,logvarsize)-1;
+    constexpr static size_t topsink_index = std::pow(2,logvarsize)-2;
 
     template<typename STREAM>
         void print(STREAM& s);
+
+    bdd_mgr* find_bdd_mgr();
 
     private:
     size_t nr_nodes_impl();
     void variables_impl(std::vector<size_t>&);
     void nodes_postorder_impl(std::vector<node_struct*>&);
+    // depth first search bdd to find terminal node, where link to bdd mgr is stored
 
     template<typename STREAM>
         void print_rec(STREAM& s);
 };
 
 using node = node_struct;
+
+class node_ref {
+    public:
+    node_ref(const node_ref& o);
+    node_ref(node* r);
+    ~node_ref();
+    node_ref(node_ref&& r);
+    node* address() { return ref; }
+    bdd_mgr& get_bdd_mgr() const;
+    node_ref low() { return node_ref(ref->lo); }
+    node_ref high() { return node_ref(ref->hi); }
+    bool is_botsink() const { return ref->is_botsink(); }
+    bool is_topsink() const { return ref->is_topsink(); }
+    bool is_terminal() const { return ref->is_terminal(); }
+    size_t nr_nodes() const { return ref->nr_nodes(); }
+    bdd_mgr* find_bdd_mgr() { return ref->find_bdd_mgr(); }
+
+    size_t reference_count() const { return ref->xref; }
+    template<typename ITERATOR>
+    bool evaluate(ITERATOR var_begin, ITERATOR var_end) { return ref->evaluate(var_begin, var_end); }
+    size_t variable() const { return ref->index; }
+    std::vector<size_t> variables() { return ref->variables(); }
+
+    friend class bdd_mgr;
+
+    bool operator==(const node_ref& o) const { return ref == o.ref; }
+
+    private:
+    node* ref = nullptr;
+};
 
 template<typename ITERATOR>
 bool node_struct::evaluate(ITERATOR var_begin, ITERATOR var_end)

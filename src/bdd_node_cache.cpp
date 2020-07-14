@@ -3,17 +3,17 @@
 
 namespace BDD {
 
-    bdd_node_cache::bdd_node_cache()
+    bdd_node_cache::bdd_node_cache(bdd_mgr* mgr)
     {
         static_assert(bdd_node_page_size > 2);
         mem_node = std::unique_ptr<bdd_node_page>(new bdd_node_page);
 
         // add terminal nodes
         botsink_ = &mem_node.get()->data[0];
-        botsink_->init_botsink();
+        botsink_->init_botsink(mgr);
 
         topsink_ = &mem_node.get()->data[1];
-        topsink_->init_topsink();
+        topsink_->init_topsink(mgr);
         
         nodeavail = nullptr;
         nodeptr = &mem_node.get()->data[2];

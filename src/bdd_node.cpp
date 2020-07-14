@@ -1,4 +1,5 @@
 #include "bdd_node.h"
+#include "bdd_mgr.h"
 #include <cassert>
 #include <algorithm>
 
@@ -13,6 +14,8 @@ namespace BDD {
         assert(v < std::pow(2,logvarsize));
         lo = l;
         hi = h;
+        hi->xref++;
+        lo->xref++;
         index = v;
         marked_ = 0;
         xref = 0;
@@ -74,37 +77,33 @@ namespace BDD {
         n.push_back(this);
     }
 
-    void node::init_botsink()
+    void node::init_botsink(bdd_mgr* mgr)
     {
-        this->lo = this;
-        this->hi = this;
-        this->xref = std::numeric_limits<decltype(this->xref)>::max();
+        this->bdd_mgr_1 = mgr;
+        this->bdd_mgr_2 = mgr;
+        this->xref = 1;
         this->index = botsink_index;
     }
 
     bool node::is_botsink() const
     {
-        const bool pred = (this->index == botsink_index);
-        assert(!pred || this->lo == this);
-        assert(!pred || this->hi == this);
-        return pred;
+        assert((this->index == topsink_index || this->index == botsink_index) == (this->lo == this->hi));
+        return (this->index == botsink_index);
     }
 
-    void node::init_topsink()
+    void node::init_topsink(bdd_mgr* mgr)
     {
-        this->lo = this;
-        this->hi = this;
-        this->xref = std::numeric_limits<decltype(this->xref)>::max();
+        this->bdd_mgr_1 = mgr;
+        this->bdd_mgr_2 = mgr;
+        this->xref = 1;
         this->index = topsink_index;
 
     }
 
     bool node::is_topsink() const
     {
-        const bool pred = (this->index == topsink_index);
-        assert(!pred || this->lo == this);
-        assert(!pred || this->hi == this);
-        return pred;
+        assert((this->index == topsink_index || this->index == botsink_index) == (this->lo == this->hi));
+        return (this->index == topsink_index);
     }
 
     std::size_t node_struct::hash_code() const
@@ -203,6 +202,40 @@ namespace BDD {
             recursively_kill();
         else 
             xref--;
+    }
+
+    bdd_mgr* node_struct::find_bdd_mgr()
+    {
+        if(is_terminal())
+            return bdd_mgr_1;
+        if(lo->is_terminal())
+            return lo->bdd_mgr_1;
+        return hi->find_bdd_mgr(); 
+    }
+
+    node_ref::node_ref(node* p)
+        : ref(p)
+    {
+        assert(ref != nullptr);
+        ref->xref++;
+    }
+
+    node_ref::node_ref(const node_ref& o)
+        : ref(o.ref)
+    {
+        assert(ref != nullptr);
+        ref->xref++;
+    }
+
+    node_ref::~node_ref()
+    {
+        if(ref != nullptr) 
+            ref->deref();
+    }
+
+    node_ref::node_ref(node_ref&& o)
+    {
+        std::swap(ref, o.ref);
     }
 
 }

@@ -15,33 +15,33 @@ namespace BDD {
             bdd_mgr();
             size_t add_variable();
             size_t nr_variables() const { return vars.size(); }
-            node* projection(const size_t var);
-            node* neg_projection(const size_t var);
-            node* negate(node* p);
+            node_ref projection(const size_t var);
+            node_ref neg_projection(const size_t var);
+            node_ref negate(node_ref p);
 
             template<class... NODES>
-                node* and_rec(node* p, NODES...);
+                node_ref and_rec(node_ref p, NODES...);
             template<class ITERATOR>
-                node* and_rec(ITERATOR nodes_begin, ITERATOR nodes_end);
-            node* and_rec(node* f, node* g);
+                node_ref and_rec(ITERATOR nodes_begin, ITERATOR nodes_end);
+            node_ref and_rec(node_ref f, node_ref g);
 
             template<class... NODES>
-                node* or_rec(node* p, NODES...);
+                node_ref or_rec(node_ref p, NODES...);
             template<class ITERATOR>
-                node* or_rec(ITERATOR nodes_begin, ITERATOR nodes_end);
-            node* or_rec(node* f, node* g);
+                node_ref or_rec(ITERATOR nodes_begin, ITERATOR nodes_end);
+            node_ref or_rec(node_ref f, node_ref g);
 
             template<class... NODES>
-                node* xor_rec(node* p, NODES... tail);
+                node_ref xor_rec(node_ref p, NODES... tail);
             template<class ITERATOR>
-                node* xor_rec(ITERATOR nodes_begin, ITERATOR nodes_end);
-            node* xor_rec(node* f, node* g);
+                node_ref xor_rec(ITERATOR nodes_begin, ITERATOR nodes_end);
+            node_ref xor_rec(node_ref f, node_ref g);
 
-            node* ite_rec(node* f, node* g, node* h);
+            node_ref ite_rec(node_ref f, node_ref g, node_ref h);
 
             // make a copy of bdd rooted at node to variables given
             template<typename VAR_MAP>
-            node* rebase(node* p, const VAR_MAP& var_map);
+            node_ref rebase(node_ref p, const VAR_MAP& var_map);
 
             // make private and add friend classes
             bdd_node_cache& get_node_cache() { return node_cache_; }
@@ -56,7 +56,7 @@ namespace BDD {
     }; 
 
     template<typename VAR_MAP>
-    node* bdd_mgr::rebase(node* p, const VAR_MAP& var_map)
+    node_ref bdd_mgr::rebase(node_ref p, const VAR_MAP& var_map)
     {
         size_t last_var = 0;
         for(const auto [x,y] : var_map)
@@ -65,7 +65,7 @@ namespace BDD {
             add_variable();
 
         // copy nodes one by one in postordering
-        const auto postorder = p->nodes_postorder();
+        const auto postorder = p.address()->nodes_postorder();
         std::unordered_map<node*, node*> node_map;
         node_map.insert({node_cache_.botsink(), node_cache_.botsink()});
         node_map.insert({node_cache_.topsink(), node_cache_.topsink()});
@@ -81,19 +81,19 @@ namespace BDD {
             node_map.insert({p, vars[v_new].unique_find(lo_mapped, hi_mapped)});
         }
 
-        return node_map.find(p)->second;
+        return node_ref(node_map.find(p.address())->second);
     }
 
     //remplate<class... NODES, class = std::conjunction<std::is_same<node*, NODES>...>
     template<class... NODES>
-        node* bdd_mgr::and_rec(node* p, NODES... tail)
+        node_ref bdd_mgr::and_rec(node_ref p, NODES... tail)
         {
-            node* and_tail = and_rec(tail...);
+            node_ref and_tail(and_rec(tail...));
             return and_rec(p, and_tail); 
         }
 
     template<class ITERATOR>
-        node* bdd_mgr::and_rec(ITERATOR nodes_begin, ITERATOR nodes_end)
+        node_ref bdd_mgr::and_rec(ITERATOR nodes_begin, ITERATOR nodes_end)
         {
             const size_t n = std::distance(nodes_begin, nodes_end);
             assert(n >= 2);
@@ -102,19 +102,19 @@ namespace BDD {
             else if(n == 3)
                 return and_rec(*nodes_begin, and_rec(*(nodes_begin+1), *(nodes_begin+2))); 
 
-            node* a1 = and_rec(nodes_begin, nodes_begin+n/2);
-            node* a2 = and_rec(nodes_begin+n/2, nodes_end);
+            node_ref a1(and_rec(nodes_begin, nodes_begin+n/2));
+            node_ref a2(and_rec(nodes_begin+n/2, nodes_end));
             return and_rec(a1,a2);
         }
 
     template<class... NODES>
-        node* bdd_mgr::or_rec(node* p, NODES... tail)
+        node_ref bdd_mgr::or_rec(node_ref p, NODES... tail)
         {
-            node* or_tail = or_rec(tail...);
+            node_ref or_tail(or_rec(tail...));
             return or_rec(p, or_tail); 
         }
     template<class ITERATOR>
-        node* bdd_mgr::or_rec(ITERATOR nodes_begin, ITERATOR nodes_end)
+        node_ref bdd_mgr::or_rec(ITERATOR nodes_begin, ITERATOR nodes_end)
         {
             const size_t n = std::distance(nodes_begin, nodes_end);
             assert(n >= 2);
@@ -123,19 +123,19 @@ namespace BDD {
             else if(n == 3)
                 return or_rec(*nodes_begin, or_rec(*(nodes_begin+1), *(nodes_begin+2))); 
 
-            node* o1 = or_rec(nodes_begin, nodes_begin+n/2);
-            node* o2 = or_rec(nodes_begin+n/2, nodes_end);
+            node_ref o1(or_rec(nodes_begin, nodes_begin+n/2));
+            node_ref o2(or_rec(nodes_begin+n/2, nodes_end));
             return or_rec(o1,o2);
         }
 
     template<class... NODES>
-        node* bdd_mgr::xor_rec(node* p, NODES... tail)
+        node_ref bdd_mgr::xor_rec(node_ref p, NODES... tail)
         {
-            node* xor_tail = xor_rec(tail...);
+            node_ref xor_tail(xor_rec(tail...));
             return xor_rec(p, xor_tail); 
         }
     template<class ITERATOR>
-        node* bdd_mgr::xor_rec(ITERATOR nodes_begin, ITERATOR nodes_end)
+        node_ref bdd_mgr::xor_rec(ITERATOR nodes_begin, ITERATOR nodes_end)
         {
             const size_t n = std::distance(nodes_begin, nodes_end);
             assert(n >= 2);
@@ -144,8 +144,28 @@ namespace BDD {
             else if(n == 3)
                 return xor_rec(*nodes_begin, xor_rec(*(nodes_begin+1), *(nodes_begin+2))); 
 
-            node* o1 = xor_rec(nodes_begin, nodes_begin+n/2);
-            node* o2 = xor_rec(nodes_begin+n/2, nodes_end);
+            node_ref o1(xor_rec(nodes_begin, nodes_begin+n/2));
+            node_ref o2(xor_rec(nodes_begin+n/2, nodes_end));
             return xor_rec(o1,o2);
         } 
+
+    inline node_ref operator&(node_ref a, node_ref b)
+    {
+        bdd_mgr* mgr = a.find_bdd_mgr();
+        return mgr->and_rec(a, b);
+
+    }
+
+    inline node_ref operator||(node_ref a, node_ref b)
+    {
+        bdd_mgr* mgr = a.find_bdd_mgr();
+        return mgr->or_rec(a, b);
+
+    }
+
+    inline node_ref operator^(node_ref a, node_ref b)
+    {
+        bdd_mgr* mgr = a.find_bdd_mgr();
+        return mgr->xor_rec(a, b); 
+    }
 }

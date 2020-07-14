@@ -8,9 +8,9 @@
 using namespace BDD;
 
 template<typename ITERATOR>
-node* create_simplex(bdd_mgr& mgr, ITERATOR var_begin, ITERATOR var_end)
+node_ref create_simplex(bdd_mgr& mgr, ITERATOR var_begin, ITERATOR var_end)
 {
-    std::vector<node*> nodes;
+    std::vector<node_ref> nodes;
     nodes.push_back(mgr.or_rec(var_begin, var_end));
     for(size_t i=0; i<std::distance(var_begin, var_end); ++i) {
         for(size_t j=i+1; j<std::distance(var_begin, var_end); ++j) {
@@ -21,10 +21,10 @@ node* create_simplex(bdd_mgr& mgr, ITERATOR var_begin, ITERATOR var_end)
 }
 
 template<typename ITERATOR>
-node* create_marginalization_constraint(bdd_mgr& mgr, node* u, ITERATOR var_begin, ITERATOR var_end)
+node_ref create_marginalization_constraint(bdd_mgr& mgr, node_ref u, ITERATOR var_begin, ITERATOR var_end)
 {
-    std::vector<node*> bdds;
-    std::vector<node*> all_vars({mgr.negate(u)});
+    std::vector<node_ref> bdds;
+    std::vector<node_ref> all_vars({mgr.negate(u)});
     for(auto it=var_begin; it!=var_end; ++it)
     {
         bdds.push_back(mgr.or_rec(mgr.negate(*it), u));
@@ -41,11 +41,11 @@ int main(int argc, char** argv)
     const size_t nr_vars = 1000;
     const size_t nr_labels = 3;
 
-    std::vector<node*> bdds;
+    std::vector<node_ref> bdds;
 
     // create unary and pairwise variables interleaved
-    std::vector<std::vector<node*>> unary_vars;
-    std::vector<std::vector<std::vector<node*>>> pairwise_vars;
+    std::vector<std::vector<node_ref>> unary_vars;
+    std::vector<std::vector<std::vector<node_ref>>> pairwise_vars;
     for(size_t i=0; i<nr_vars; ++i)
     {
         unary_vars.push_back({});
@@ -78,7 +78,7 @@ int main(int argc, char** argv)
     {
         for(size_t l1 = 0; l1<nr_labels; ++l1)
         {
-            std::vector<node*> p;
+            std::vector<node_ref> p;
             for(size_t l2 = 0; l2<nr_labels; ++l2)
                 p.push_back(pairwise_vars[i][l1][l2]);
             bdds.push_back(create_marginalization_constraint(mgr, unary_vars[i][l1], p.begin(), p.end()));
@@ -86,20 +86,17 @@ int main(int argc, char** argv)
 
         for(size_t l2 = 0; l2<nr_labels; ++l2)
         {
-            std::vector<node*> p;
+            std::vector<node_ref> p;
             for(size_t l1 = 0; l1<nr_labels; ++l1)
                 p.push_back(pairwise_vars[i][l1][l2]);
             bdds.push_back(create_marginalization_constraint(mgr, unary_vars[i+1][l2], p.begin(), p.end()));
         }
     }
     
-    node* c = mgr.and_rec(bdds.begin(), bdds.end());
+    node_ref c = mgr.and_rec(bdds.begin(), bdds.end());
     
-    std::cout << "nr mrf nodes: " << c->nr_nodes() << "\n";
-    test(c->nr_nodes() == 47957, "nr of nodes for mrf chain not matching."); // nr valid for 1000 nodes and 3 labels
+    std::cout << "nr mrf nodes: " << c.nr_nodes() << "\n";
+    test(c.nr_nodes() == 47957, "nr of nodes for mrf chain not matching."); // nr valid for 1000 nodes and 3 labels
     //c->print(std::cout);
-    c->deref();
-    for(node* p : bdds)
-        p->deref();
 }
 
