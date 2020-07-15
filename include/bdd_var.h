@@ -19,7 +19,7 @@ namespace BDD {
     constexpr static std::size_t log_max_hash_size = log_nr_unique_table_pages + log_nr_unique_table_slots_per_page;
 
     constexpr static double min_unique_table_fill = 1.0/8.0;
-    constexpr static double max_unique_table_fill = 3.0/4.0;
+    constexpr static double max_unique_table_fill = 1.0/2.0;
     //constexpr static std::size_t max_hash_pages = (((static_cast<std::size_t>(1) << log_max_hash_size) + slots_per_page - 1) / slots_per_page);
     constexpr static std::size_t initial_page_mem_size = 512;
 
@@ -64,6 +64,7 @@ class var_struct {
         std::size_t next_free_slot(const std::size_t hash) const;
         void store_node(const std::size_t hash, node* p);
         std::size_t nr_pages_debug() const;
+        size_t nr_free_slots_debug() const;
         std::size_t nr_pages() const;
         node* unique_table_lookup(node* l, node* h);
         void double_unique_table_size();

@@ -16,6 +16,8 @@ namespace BDD {
 
     node_ref bdd_mgr::projection(const size_t var)
     {
+        for(size_t i=vars.size(); i<=var; ++i)
+            add_variable();
         assert(var < vars.size());
         return node_ref(vars[var].unique_find(node_cache_.botsink(), node_cache_.topsink()));
         //return vars[var].projection();

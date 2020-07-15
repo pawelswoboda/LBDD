@@ -7,6 +7,7 @@ namespace BDD {
     {
         static_assert(bdd_node_page_size > 2);
         mem_node = std::unique_ptr<bdd_node_page>(new bdd_node_page);
+        assert(mem_node.get() != nullptr);
 
         // add terminal nodes
         botsink_ = &mem_node.get()->data[0];
@@ -22,6 +23,7 @@ namespace BDD {
     void bdd_node_cache::increase_cache()
     {
         std::unique_ptr<bdd_node_page> new_bdd_node_page = std::unique_ptr<bdd_node_page>(new bdd_node_page); 
+        assert(new_bdd_node_page.get() != nullptr);
         std::swap(new_bdd_node_page.get()->next, mem_node);
         std::swap(new_bdd_node_page, mem_node);
 
@@ -36,6 +38,7 @@ namespace BDD {
         if(r != nullptr)
         {
             nodeavail = nodeavail->next_available;
+            assert(r != nullptr);
             return r;
         }
         else
@@ -46,6 +49,7 @@ namespace BDD {
             if(std::distance(&(mem_node.get()->data[0]), nodeptr) < mem_node.get()->data.size())
             {
                 nodeptr++;
+                assert(r != nullptr);
                 return r;
             }
             else

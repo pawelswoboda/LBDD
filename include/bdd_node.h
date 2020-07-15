@@ -94,10 +94,15 @@ class node_ref {
     bdd_mgr* find_bdd_mgr() { return ref->find_bdd_mgr(); }
 
     size_t reference_count() const { return ref->xref; }
+
     template<typename ITERATOR>
     bool evaluate(ITERATOR var_begin, ITERATOR var_end) { return ref->evaluate(var_begin, var_end); }
+
     size_t variable() const { return ref->index; }
     std::vector<size_t> variables() { return ref->variables(); }
+
+    template<typename STREAM>
+        void print(STREAM& s) { return ref->print(s); }
 
     friend class bdd_mgr;
 
