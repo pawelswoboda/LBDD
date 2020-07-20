@@ -8,8 +8,15 @@ namespace BDD {
         memo_(node_cache_)
     {}
 
+    bdd_mgr::~bdd_mgr()
+    {
+        for(size_t i=0; i<vars.size(); ++i)
+            vars[i].release_nodes(); 
+    }
+
     size_t bdd_mgr::add_variable()
     {
+        assert(vars.size() < maxvarsize);
         vars.emplace_back(vars.size(), *this);
         return vars.size()-1;
     }
@@ -243,6 +250,14 @@ namespace BDD {
         assert(r != nullptr);
         memo_.cache_insert(f.ref, g.ref, h.ref, r);
         return node_ref(r); 
+    }
+
+    void bdd_mgr::collect_garbage()
+    {
+        for(size_t i=0; i<vars.size(); ++i)
+            vars[i].remove_dead_nodes();
+
+        memo_.purge();
     }
 
 }

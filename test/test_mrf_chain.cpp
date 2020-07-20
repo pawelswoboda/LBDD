@@ -60,6 +60,7 @@ node_ref create_mrf_chain_2(bdd_mgr& mgr, const size_t nr_labels)
         for(size_t j = 0; j<nr_labels; ++j)
             p.push_back(p_vars[i*nr_labels + j]);
         marg_constrs.push_back(create_marginalization_constraint(mgr, u_vars_1[i], p.begin(), p.end()));
+        ps = ps & marg_constrs.back();
     }
 
     for(size_t j = 0; j<nr_labels; ++j)
@@ -68,10 +69,12 @@ node_ref create_mrf_chain_2(bdd_mgr& mgr, const size_t nr_labels)
         for(size_t i = 0; i<nr_labels; ++i)
             p.push_back(p_vars[i*nr_labels + j]);
         marg_constrs.push_back(create_marginalization_constraint(mgr, u_vars_2[j], p.begin(), p.end()));
+        ps = ps & marg_constrs.back();
     }
 
-    node_ref mc = mgr.and_rec(marg_constrs.begin(), marg_constrs.end());
-    return mc & us1 & us2 & ps;
+    //node_ref mc = mgr.and_rec(marg_constrs.begin(), marg_constrs.end());
+    //return mc & us1 & us2 & ps;
+    return us1 & us2 & ps;
 }
 
 node_ref create_mrf_chain_rec(bdd_mgr& mgr, const size_t nr_vars, const size_t nr_labels)
@@ -182,6 +185,12 @@ int main(int argc, char** argv)
 {
     bdd_mgr mgr;
 
+    test_mrf_chin_construction_equiv(mgr, 8, 5);
+    test_mrf_chin_construction_equiv(mgr, 8, 7);
+    test_mrf_chin_construction_equiv(mgr, 8, 8);
+    test_mrf_chin_construction_equiv(mgr, 8, 9);
+    test_mrf_chin_construction_equiv(mgr, 8, 10);
+
     test_mrf_chin_construction_equiv(mgr, 2, 2);
     test_mrf_chin_construction_equiv(mgr, 2, 3);
     test_mrf_chin_construction_equiv(mgr, 2, 4);
@@ -194,16 +203,13 @@ int main(int argc, char** argv)
     test_mrf_chin_construction_equiv(mgr, 4, 3);
     test_mrf_chin_construction_equiv(mgr, 4, 4);
 
-    test_mrf_chin_construction_equiv(mgr, 8, 2);
-    test_mrf_chin_construction_equiv(mgr, 8, 3);
-    test_mrf_chin_construction_equiv(mgr, 8, 4);
-
     node_ref mrf_1024_3 = create_mrf_chain_rec(mgr, 1024, 3);
     node_ref mrf_8_10 = create_mrf_chain_rec(mgr, 8, 10);
 
     const size_t nr_labels = 10;
     node_ref bdd = create_mrf_chain_rec(mgr, 2, nr_labels);
     for(size_t i=0; i<nr_labels; ++i)
+    {
         for(size_t j=0; j<nr_labels; ++j)
         {
             std::vector<char> l(bdd.variables().size(), 0);
@@ -214,14 +220,12 @@ int main(int argc, char** argv)
 
             if(i != j)
             {
-            std::fill(l.begin(), l.end(), 0);
-            l[i] = 1;
-            l[nr_labels + j*nr_labels + i] = 1;
-            l[nr_labels + nr_labels*nr_labels + j] = 1;
-            test(bdd.evaluate(l.begin(), l.end()) == false, " mrf chain labeling error.");
+                std::fill(l.begin(), l.end(), 0);
+                l[i] = 1;
+                l[nr_labels + j*nr_labels + i] = 1;
+                l[nr_labels + nr_labels*nr_labels + j] = 1;
+                test(bdd.evaluate(l.begin(), l.end()) == false, " mrf chain labeling error.");
             }
-
         }
-
-
+    }
 }

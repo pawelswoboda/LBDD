@@ -28,6 +28,7 @@ class node_struct
     void recursively_revive();
     void recursively_kill();
     void deref();
+    bool dead() const { return xref <= 0; }
 
     template<typename ITERATOR>
     bool evaluate(ITERATOR var_begin, ITERATOR var_end);
@@ -107,6 +108,7 @@ class node_ref {
     friend class bdd_mgr;
 
     bool operator==(const node_ref& o) const { return ref == o.ref; }
+    node_ref& operator=(const node_ref& o);
 
     private:
     node* ref = nullptr;

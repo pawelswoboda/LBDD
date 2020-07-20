@@ -70,9 +70,16 @@ int main(int argc, char** argv)
     test(simplex.nr_nodes() == 5, "nr of simplex bdd nodes wrong");
     test(simplex.variables() == std::vector<size_t>({0,1,2}), "variables of simplex do not match");
 
+    size_t nr_nodes_max;
+    {
     std::unordered_map<size_t,size_t> v_map = {{0,3},{1,4},{2,5}};
-//    node* simplex_345 = mgr.rebase(simplex, v_map);
-//    test(simplex_345->variables() == std::vector<size_t>({3,4,5}), "variables of rebased simplex do not match");
+    node_ref simplex_345 = mgr.rebase(simplex, v_map);
+    test(simplex_345.variables() == std::vector<size_t>({3,4,5}), "variables of rebased simplex do not match");
+
+    nr_nodes_max = mgr.nr_nodes();
+    }
+    mgr.collect_garbage();
+    test(nr_nodes_max > mgr.nr_nodes(), "garbage collection did not remove unused nodes.");
 }
 
 

@@ -66,6 +66,10 @@ namespace BDD {
     void bdd_node_cache::free_node(node* p)
     {
         assert(p->xref <= 0);
+        assert(p->lo->xref > 0);
+        p->lo->xref--;
+        assert(p->hi->xref > 0);
+        p->hi->xref--;
         p->next_available = nodeavail;
         nodeavail = p;
         total_nodes--;

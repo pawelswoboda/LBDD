@@ -13,8 +13,10 @@ namespace BDD {
     class bdd_mgr {
         public:
             bdd_mgr();
+            ~bdd_mgr();
             size_t add_variable();
             size_t nr_variables() const { return vars.size(); }
+            size_t nr_nodes() const { return node_cache_.nr_nodes(); }
             node_ref projection(const size_t var);
             node_ref neg_projection(const size_t var);
             node_ref negate(node_ref p);
@@ -46,6 +48,9 @@ namespace BDD {
             // make private and add friend classes
             bdd_node_cache& get_node_cache() { return node_cache_; }
             unique_table_page_cache& get_unique_table_page_cache() { return page_cache_; }
+
+            void collect_garbage();
+
         private:
 
             bdd_node_cache node_cache_;

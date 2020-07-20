@@ -53,6 +53,7 @@ class var_struct {
     public:
         var_struct(const std::size_t index, bdd_mgr& _bdd_mgr);
         ~var_struct();
+        void release_nodes();
         var_struct(var_struct&&);
         var_struct(const var_struct&) = delete;
 
@@ -72,20 +73,23 @@ class var_struct {
         node* unique_find(node* l,node* h); 
         std::size_t unique_table_size() const;
         //node* projection() const;
+        void remove_dead_nodes();
 
     private:
         const size_t var;
+        double occupied_rate() const;
+        double occupied_rate(const size_t new_nr_pages) const;
         void initialize_unique_table();
 
         //node* proj = nullptr; // address of the projection function x_v
-        node* repl = nullptr; // address of replacement function y_v
-        std::size_t free; // number of unused slots in the unique table for v
-        std::size_t dead_nodes;
+        //node* repl = nullptr; // address of replacement function y_v
+        std::size_t free = 0; // number of unused slots in the unique table for v
+        //std::size_t dead_nodes = 0;
         std::size_t timer = 0;
         constexpr static std::size_t timerinterval = 1024;
         constexpr static double dead_fraction = 1.0;
-        std::size_t mask; // number of pages for the unique table minus 1
-        std::array<unique_table_page*, nr_unique_table_pages> base; // base addresses for its pages
+        std::size_t mask = 0; // number of pages for the unique table minus 1
+        std::array<unique_table_page*, nr_unique_table_pages> base = {}; // base addresses for its pages
         std::size_t name; // user's name (subscript) for this variable
         unsigned int timestamp; // time stamp for composition
         int aux; // flag used by sifting algorithm

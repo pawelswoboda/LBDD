@@ -170,7 +170,7 @@ namespace BDD {
     // TODO: make implementations operate without stack
     void node_struct::recursively_revive()
     {
-        xref= 0;
+        xref = 0;
         //deadnodes--;
         if(lo->xref<0)
             lo->recursively_revive();
@@ -230,12 +230,25 @@ namespace BDD {
     node_ref::~node_ref()
     {
         if(ref != nullptr) 
-            ref->deref();
+        {
+            assert(ref->xref > 0);
+            ref->xref--;
+        }
     }
 
     node_ref::node_ref(node_ref&& o)
     {
         std::swap(ref, o.ref);
+    }
+
+    node_ref& node_ref::operator=(const node_ref& o)
+    { 
+        if(ref != nullptr)
+            ref->xref--;
+        ref = o.ref;
+        if(ref != nullptr)
+            ref->xref++;
+        return *this;
     }
 
 }

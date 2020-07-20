@@ -70,7 +70,7 @@ namespace BDD {
         bdd_mgr_(o.bdd_mgr_) 
     {
         //std::swap(proj, o.proj);
-        std::swap(repl, o.repl);
+        //std::swap(repl, o.repl);
         std::swap(base, o.base);
         std::swap(mask, o.mask);
         std::swap(free, o.free);
@@ -82,6 +82,7 @@ namespace BDD {
         //std::cout << "nr unique table pages: " << nr_pages_debug() << "\n";
         //if(proj != nullptr)
         //    proj->deref();
+        assert(base[0] == nullptr);
         for(std::size_t i=0; i<base.size(); ++i)
         {
             if(base[i] == nullptr)
@@ -94,6 +95,23 @@ namespace BDD {
             }
             bdd_mgr_.get_unique_table_page_cache().free_page(base[i]);
         }
+    }
+
+    void var_struct::release_nodes()
+    {
+        for(std::size_t i=0; i<base.size(); ++i)
+        {
+            if(base[i] == nullptr)
+                break;
+            for(std::size_t j=0; j<base[i]->data.size(); ++j)
+            {
+                node* p = base[i]->data[j];
+                if(p != nullptr)
+                    bdd_mgr_.get_node_cache().free_node(p); 
+            }
+            bdd_mgr_.get_unique_table_page_cache().free_page(base[i]);
+            base[i] = nullptr;
+        } 
     }
 
     std::size_t var_struct::hash_code(node* p) const
@@ -181,12 +199,99 @@ namespace BDD {
         throw std::runtime_error("unique table corrupted."); 
     }
 
+    double var_struct::occupied_rate() const
+    {
+        return double(unique_table_size() - free) / double(unique_table_size());
+    }
+
+    double var_struct::occupied_rate(const size_t new_nr_pages) const
+    {
+        const int page_diff = nr_pages() - new_nr_pages;
+        const size_t new_free = free + page_diff * nr_unique_table_slots_per_page;
+        const size_t new_cap = new_nr_pages * nr_unique_table_slots_per_page;
+        return double(new_cap - new_free) / double(new_cap);
+    }
+
     void var_struct::initialize_unique_table()
     {
         base[0] = bdd_mgr_.get_unique_table_page_cache().reserve_page();
         mask = 0;
         free = nr_unique_table_slots_per_page;
         std::fill(base.begin()+1, base.end(), nullptr);
+    }
+
+    void var_struct::remove_dead_nodes()
+    {
+        for(std::size_t k = 0; k < unique_table_size(); ++k)
+        {
+            node* p = fetch_node(k);
+            if(p != nullptr && p->dead())
+            {
+                bdd_mgr_.get_node_cache().free_node(p);
+                store_node(k, nullptr);
+                free++;
+                // move nodes that follow this one back if hash value indicates so
+                size_t first_free_slot = k;
+                for(size_t j = k+1;; ++j)
+                {
+                    const size_t jj = j % unique_table_size();
+                    node* p = fetch_node(j);
+                    if(p == nullptr)
+                    {
+                        k = j;
+                        break;
+                    }
+                    if(p->dead())
+                    {
+                        store_node(j, nullptr);
+                        free++;
+                    }
+                    else
+                    {
+                        // shift one place up if hash code says so
+                        // TODO: can be made faster.
+                        store_node(next_free_slot(hash_code(p)), p);
+                    }
+                }
+            }
+        }
+
+        // reduce nr of pages if unique table too sparsely populated
+        if(nr_pages() > 1 && occupied_rate() <= min_unique_table_fill)
+        {
+            const size_t new_nr_pages = [&]() {
+                size_t n = nr_pages()/2;
+                while(n >= 1 && occupied_rate(n) >= min_unique_table_fill)
+                    n /= 2;
+                return n;
+            }();
+
+            // remap occupied slots to first new_nr_pages
+            for(std::size_t k = new_nr_pages*nr_unique_table_slots_per_page; k < unique_table_size(); ++k)
+            {
+                node* p = fetch_node(k);
+                if(p != nullptr)
+                {
+                    const size_t next_free_slot = [&]() {
+                        for(size_t l=k;; l++)
+                        {
+                            l = l % (new_nr_pages*nr_unique_table_slots_per_page);
+                            if(fetch_node(l) == nullptr)
+                                return l;
+                        }
+                        assert(false);
+                        return size_t(0);
+                    }();
+
+                    store_node(next_free_slot, p);
+                } 
+            }
+
+            for(size_t k = new_nr_pages; k < nr_pages(); ++k)
+                bdd_mgr_.get_unique_table_page_cache().free_page(base[k]);
+
+            mask = new_nr_pages-1;
+        }
     }
 
     void var_struct::double_unique_table_size()
@@ -255,19 +360,17 @@ namespace BDD {
         else // node not present
         {
             // garbage collection
-            if((++timer % timerinterval) == 0 && (dead_nodes > unique_table_size()/dead_fraction))
+            //if((++timer % timerinterval) == 0 && (dead_nodes > unique_table_size()/dead_fraction))
+            if((++timer % timerinterval) == 0)
             {
-                assert(false);
                 // TODO: implement
-                //collect_garbage(0);
+                //remove_dead_nodes();
                 return unique_find(l, h);
             }
         }
 
         // allocate free node and add it to unique table
-        const double occupied_rate = (unique_table_size()
-                - free) / double(unique_table_size()) ;
-        if(occupied_rate > max_unique_table_fill) // double number of base pages for unique table
+        if(occupied_rate() > max_unique_table_fill) // double number of base pages for unique table
             double_unique_table_size();
 
         // allocate new node and insert it into unique table

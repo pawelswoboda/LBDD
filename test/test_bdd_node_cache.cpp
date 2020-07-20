@@ -12,6 +12,10 @@ int main(int argc, char** argv)
     for(std::size_t i=0; i<nr_nodes_to_insert; ++i)
     {
         v.push_back(cache.reserve_node());
+        v.back()->lo = cache.topsink();
+        v.back()->hi = cache.topsink();
+        cache.topsink()->xref++;
+        cache.topsink()->xref++;
         test(i+1+2 == cache.nr_nodes(), "node counting error when adding nodes");
     }
 

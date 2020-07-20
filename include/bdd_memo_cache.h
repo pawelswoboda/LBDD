@@ -42,11 +42,12 @@ namespace BDD {
             void cache_insert(node* f, node* g, node* h, node* r);
             memo_struct& get_memo(const size_t slot);
 
+            void purge();
+
         private:
             size_t cache_hash(node* f, node* g, node* h);
             void init_cache();
             void double_cache();
-            void purge();
             size_t choose_cache_size(const size_t items) const;
             size_t nr_occupied_slots() const;
 

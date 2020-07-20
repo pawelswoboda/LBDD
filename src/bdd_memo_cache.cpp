@@ -80,10 +80,11 @@ namespace BDD {
             assert(m.r != nullptr);
             if(m.r->xref < 0)
             {
+                assert(false);
                 m.r->recursively_revive();
                 return m.r;
             }
-            m.r->xref++;
+            //m.r->xref++;
             return m.r;
         }
         return nullptr;
@@ -186,6 +187,8 @@ namespace BDD {
             else
                 ++items;
 
+        return;
+        // TODO: resize memo cache? A resize will often not physically deallocate freed memory.
         cache_inserts = items;
         const size_t new_cache_size = choose_cache_size(items);
 
