@@ -38,42 +38,34 @@ namespace BDD {
 
     node_ref bdd_mgr::negate(node_ref p)
     {
-        const std::size_t v = p.variable();
-        assert(v < nr_variables());
-        return node_ref(vars[v].unique_find(p.ref->hi, p.ref->lo));
+        if(p.is_botsink())
+            return node_ref(node_cache_.topsink());
+        if(p.is_topsink())
+            return node_ref(node_cache_.botsink());
+        else
+        {
+            const std::size_t v = p.variable();
+            assert(v < nr_variables());
+            return node_ref(vars[v].unique_find( negate(p.low()).ref, negate(p.high()).ref));
+        }
     }
 
     node_ref bdd_mgr::and_rec(node_ref f, node_ref g)
     {
         if(f == g)
-        {
-            //f->xref++;
             return f;
-        }
+
         if(f.ref > g.ref)
             return and_rec(g,f);
-        //assert(g != node_cache_.topsink() && g != node_cache_.botsink()); // we must also check g for being top or bottom sink
 
         if(f.ref == node_cache_.topsink())
-        {
-            //g->xref++;
             return g;
-        }
         else if(f.ref == node_cache_.botsink())
-        {
-            //node_cache_.botsink()->xref++;
             return node_ref(node_cache_.botsink());
-        }
         else if(g.ref == node_cache_.topsink())
-        {
-            //f->xref++;
             return f;
-        }
         else if(g.ref == node_cache_.botsink())
-        {
-            //node_cache_.botsink()->xref++;
             return node_ref(node_cache_.botsink()); 
-        }
 
         node* m = memo_.cache_lookup(f.ref, g.ref, memo_struct::and_symb());
         if(m != nullptr)
@@ -89,21 +81,72 @@ namespace BDD {
         }();
 
         node_ref r0 = and_rec(&v == &f_var ? f.low() : f, &v == &g_var ? g.low() : g);
-        if(r0.ref == nullptr)
-            return nullptr;
+        assert(r0.ref != nullptr);
         node_ref r1 = and_rec(&v == &f_var ? f.high() : f, &v == &g_var ? g.high() : g);
-        if(r1.ref == nullptr)
-        {
-            assert(false);
-            //r0->deref();
-            return nullptr;
-        }
+        assert(r1.ref != nullptr);
         
         node* r = v.unique_find(r0.ref, r1.ref);
         assert(r != nullptr);
         //if(r != nullptr)
         memo_.cache_insert(f.ref, g.ref, memo_struct::and_symb(), r);
         return node_ref(r); 
+    }
+
+    // return
+    std::tuple<node_ref,size_t> bdd_mgr::and_rec_limited(node_ref f, node_ref g, const size_t node_limit)
+    {
+        if(f == g)
+        {
+            const size_t nr_nodes = f.nr_nodes();
+            if(nr_nodes > node_limit)
+               return {node_ref(nullptr), std::numeric_limits<size_t>::max()};
+            return {f,nr_nodes};
+        }
+
+        if(f.ref > g.ref)
+            return and_rec_limited(g,f,node_limit);
+
+        if(f.ref == node_cache_.topsink())
+            return {g,g.nr_nodes()};
+        else if(f.ref == node_cache_.botsink())
+            return {node_ref(node_cache_.botsink()),0};
+        else if(g.ref == node_cache_.topsink())
+            return {f,f.nr_nodes()};
+        else if(g.ref == node_cache_.botsink())
+            return {node_ref(node_cache_.botsink()),0};
+
+        node* m = memo_.cache_lookup(f.ref, g.ref, memo_struct::and_symb());
+        if(m != nullptr)
+        {
+            const size_t m_nr_nodes = m->nr_nodes();
+            if(m != nullptr)
+                if(m_nr_nodes <= node_limit)
+                    return {node_ref(m), m_nr_nodes};
+                else 
+                    return {node_ref(nullptr), std::numeric_limits<size_t>::max()};
+        }
+
+        var& f_var = vars[f.variable()];
+        var& g_var = vars[g.variable()];
+        var& v = [&]() -> var& {
+            if(&f_var < &g_var)
+                return f_var;
+            else 
+                return g_var;
+        }();
+
+        auto [r0, r0_nr_nodes] = and_rec_limited(&v == &f_var ? f.low() : f, &v == &g_var ? g.low() : g, node_limit);
+        if(r0_nr_nodes > node_limit)
+            return {node_ref(nullptr), std::numeric_limits<size_t>::max()};
+        auto [r1, r1_nr_nodes] = and_rec_limited(&v == &f_var ? f.high() : f, &v == &g_var ? g.high() : g, node_limit);
+        if(r0_nr_nodes + r1_nr_nodes > node_limit)
+            return {node_ref(nullptr), std::numeric_limits<size_t>::max()};
+        
+        node* r = v.unique_find(r0.ref, r1.ref);
+        assert(r != nullptr);
+        //if(r != nullptr)
+        memo_.cache_insert(f.ref, g.ref, memo_struct::and_symb(), r);
+        return {node_ref(r),r0_nr_nodes + r1_nr_nodes}; 
     }
 
     node_ref bdd_mgr::or_rec(node_ref f, node_ref g)
@@ -164,29 +207,27 @@ namespace BDD {
     {
         // trivial cases
         if(f == g)
-        {
             return node_ref(node_cache_.botsink());
-        }
 
         if(f.ref > g.ref)
             return xor_rec(g,f);
-            //std::swap(f,g);
 
         if(f.ref == node_cache_.botsink())
-        {
             return g;
-        }
         else if(g.ref == node_cache_.botsink())
-        {
             return f;
-        }
+        else if(f.ref == node_cache_.topsink())
+            return negate(g);
+        else if(g.ref == node_cache_.topsink())
+            return negate(f);
 
         node* m = memo_.cache_lookup(f.ref, g.ref, memo_struct::xor_symb());
         if(m != nullptr)
             return node_ref(m);
 
         // find recursively
-        var& vf = f.is_topsink() ? vars[0] : vars[f.variable()];
+        assert(f.variable() < nr_variables());
+        var& vf = vars[f.variable()];
         assert(g.variable() < nr_variables());
         var& vg = vars[g.variable()];
         var& v = *std::max(&vg,&vf);

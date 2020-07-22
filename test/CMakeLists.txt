@@ -25,3 +25,12 @@ add_test(test_ite test_ite)
 add_executable(test_mrf_chain test_mrf_chain.cpp)
 target_link_libraries(test_mrf_chain bdd)
 add_test(test_mrf_chain test_mrf_chain)
+
+add_executable(test_bdd_and_limited test_bdd_and_limited.cpp)
+target_link_libraries(test_bdd_and_limited bdd)
+add_test(test_bdd_and_limited test_bdd_and_limited)
+
+add_executable(test_utility_functions test_utility_functions.cpp)
+target_link_libraries(test_utility_functions bdd)
+add_test(test_utility_functions test_utility_functions)
+

@@ -216,8 +216,8 @@ namespace BDD {
     node_ref::node_ref(node* p)
         : ref(p)
     {
-        assert(ref != nullptr);
-        ref->xref++;
+        if(ref != nullptr)
+            ref->xref++;
     }
 
     node_ref::node_ref(const node_ref& o)

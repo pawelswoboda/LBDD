@@ -6,7 +6,9 @@
 #include "bdd_memo_cache.h"
 #include <vector>
 #include <unordered_map>
+#include <tuple>
 #include <algorithm>
+#include <cassert>
 
 namespace BDD {
 
@@ -26,6 +28,8 @@ namespace BDD {
             template<class ITERATOR>
                 node_ref and_rec(ITERATOR nodes_begin, ITERATOR nodes_end);
             node_ref and_rec(node_ref f, node_ref g);
+            // return
+            std::tuple<node_ref,size_t> and_rec_limited(node_ref f, node_ref g, const size_t node_limit);
 
             template<class... NODES>
                 node_ref or_rec(node_ref p, NODES...);
@@ -50,6 +54,14 @@ namespace BDD {
             unique_table_page_cache& get_unique_table_page_cache() { return page_cache_; }
 
             void collect_garbage();
+
+            // utility functions for computing common functions
+            template<typename BDD_ITERATOR>
+                node_ref all_false(BDD_ITERATOR begin, BDD_ITERATOR end);
+            template<typename BDD_ITERATOR>
+                node_ref simplex(BDD_ITERATOR begin, BDD_ITERATOR end);
+            template<typename BDD_ITERATOR>
+                node_ref at_most_one(BDD_ITERATOR begin, BDD_ITERATOR end);
 
         private:
 
@@ -109,7 +121,7 @@ namespace BDD {
 
             node_ref a1(and_rec(nodes_begin, nodes_begin+n/2));
             node_ref a2(and_rec(nodes_begin+n/2, nodes_end));
-            return and_rec(a1,a2);
+            return and_rec(a1, a2);
         }
 
     template<class... NODES>
@@ -130,7 +142,7 @@ namespace BDD {
 
             node_ref o1(or_rec(nodes_begin, nodes_begin+n/2));
             node_ref o2(or_rec(nodes_begin+n/2, nodes_end));
-            return or_rec(o1,o2);
+            return or_rec(o1, o2);
         }
 
     template<class... NODES>
@@ -151,7 +163,7 @@ namespace BDD {
 
             node_ref o1(xor_rec(nodes_begin, nodes_begin+n/2));
             node_ref o2(xor_rec(nodes_begin+n/2, nodes_end));
-            return xor_rec(o1,o2);
+            return xor_rec(o1, o2);
         } 
 
     inline node_ref operator&(node_ref a, node_ref b)
@@ -173,4 +185,67 @@ namespace BDD {
         bdd_mgr* mgr = a.find_bdd_mgr();
         return mgr->xor_rec(a, b); 
     }
+
+    inline node_ref operator!(node_ref a)
+    {
+        bdd_mgr* mgr = a.find_bdd_mgr();
+        return mgr->negate(a);
+    }
+
+    template<typename BDD_ITERATOR>
+        node_ref bdd_mgr::all_false(BDD_ITERATOR begin, BDD_ITERATOR end)
+        {
+            const size_t n = std::distance(begin, end);
+            assert(n > 0);
+            if(n == 1)
+                return negate(*begin);
+            if(n == 2)
+                return and_rec(negate(*begin), negate(*(begin+1)));
+            return and_rec(
+                    all_false(begin, begin+n/2),
+                    all_false(begin+n/2, end)
+                    );
+        }
+
+    template<typename BDD_ITERATOR>
+        node_ref bdd_mgr::simplex(BDD_ITERATOR begin, BDD_ITERATOR end)
+        {
+            assert(std::distance(begin, end) > 0);
+            if(std::distance(begin,end) == 1)
+                return *begin;
+
+            // at least one is active
+            node_ref alo = or_rec(begin,end);
+
+            // at most one is active
+            node_ref amo = at_most_one(begin, end);
+
+            return and_rec(alo, amo); 
+        }
+
+    template<typename BDD_ITERATOR>
+        node_ref bdd_mgr::at_most_one(BDD_ITERATOR begin, BDD_ITERATOR end)
+        {
+            assert(std::distance(begin, end) > 0);
+            const std::size_t n = std::distance(begin, end);
+            if(n == 1)
+                return node_ref(node_cache_.topsink());
+            if(n == 2)
+                return or_rec(negate(*begin), negate(*(begin+1)));
+            if(n == 3)
+                return and_rec( 
+                        or_rec(negate(*begin), negate(*(begin+1))),
+                        or_rec(negate(*begin), negate(*(begin+2))),
+                        or_rec(negate(*(begin+1)), negate(*(begin+2)))
+                        );
+
+            node_ref at_most_one_1 = at_most_one(begin, begin + n/2);
+            node_ref all_false_1 = all_false(begin, begin + n/2);
+            node_ref at_most_one_2 = at_most_one(begin + n/2, end);
+            node_ref all_false_2 = all_false(begin + n/2, end);
+            return or_rec(
+                    and_rec(at_most_one_1, all_false_2),
+                    and_rec(at_most_one_2, all_false_1)
+                    ); 
+        }
 }
