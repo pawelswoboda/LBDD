@@ -263,7 +263,12 @@ namespace BDD {
         std::memcpy(&node_refs, &nodes, sizeof(nodes));
         assert(node_refs.size() == nodes.size());
         for(size_t i=0; i<nodes.size(); ++i)
-            node_refs[i] = node_ref(nodes[i]);
+        {
+            // this construction is necessary for correct reference counting
+            node_ref n(nodes[i]);
+            nodes[i] = nullptr;
+            node_refs[i] = n;
+        }
         std::memcpy(&nodes, &empty_nodes, sizeof(nodes));
         return node_refs;
     }

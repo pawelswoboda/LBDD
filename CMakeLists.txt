@@ -15,7 +15,7 @@ ENDIF()
 add_library(bdd INTERFACE)
 target_compile_features(bdd INTERFACE cxx_std_17) 
 target_compile_options(bdd INTERFACE -march=native)
-target_include_directories(bdd INTERFACE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(bdd INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 enable_testing()
 
