@@ -2,8 +2,6 @@ project(BDD)
 
 cmake_minimum_required(VERSION 2.8.12)
 
-set(CMAKE_CXX_FLAGS "-std=c++17")
-add_definitions(-march=native)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 SET( CMAKE_EXPORT_COMPILE_COMMANDS ON )
@@ -14,8 +12,10 @@ IF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/compile_commands.json" )
         )
 ENDIF()
 
-
-include_directories(${CMAKE_SOURCE_DIR}/include)
+add_library(bdd INTERFACE)
+target_compile_features(bdd INTERFACE cxx_std_17) 
+target_compile_options(bdd INTERFACE -march=native)
+target_include_directories(bdd INTERFACE ${CMAKE_SOURCE_DIR}/include)
 
 enable_testing()
 
