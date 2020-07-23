@@ -3,6 +3,7 @@
 #include <random>
 #include <cassert>
 #include <vector>
+#include <functional>
 
 namespace BDD {
 
@@ -84,7 +85,7 @@ class node_ref {
     node_ref(node* r);
     ~node_ref();
     node_ref(node_ref&& r);
-    node* address() { return ref; }
+    node* address() const { return ref; }
     bdd_mgr& get_bdd_mgr() const;
     node_ref low() { return node_ref(ref->lo); }
     node_ref high() { return node_ref(ref->hi); }
@@ -109,6 +110,8 @@ class node_ref {
 
     bool operator==(const node_ref& o) const { return ref == o.ref; }
     node_ref& operator=(const node_ref& o);
+
+    std::vector<node_ref> nodes_postorder();
 
     private:
     node* ref = nullptr;
@@ -164,4 +167,17 @@ void node_struct::print_rec(STREAM& s)
         hi->print_rec(s);
 }
 
+}
+// insert hsh function for node_ref
+namespace std {
+
+    template<>
+        struct hash<BDD::node_ref>
+        {
+            size_t operator()(const BDD::node_ref& x) const
+            {
+                return hash<BDD::node*>()(x.address());
+            }
+
+        };
 }

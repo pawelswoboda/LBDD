@@ -22,6 +22,8 @@ namespace BDD {
             node_ref projection(const size_t var);
             node_ref neg_projection(const size_t var);
             node_ref negate(node_ref p);
+            node_ref topsink() const { return node_ref(node_cache_.topsink()); }
+            node_ref botsink() const { return node_ref(node_cache_.botsink()); }
 
             template<class... NODES>
                 node_ref and_rec(node_ref p, NODES...);

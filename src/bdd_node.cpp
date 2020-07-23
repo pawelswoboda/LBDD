@@ -2,6 +2,7 @@
 #include "bdd_mgr.h"
 #include <cassert>
 #include <algorithm>
+#include <cstring>
 
 namespace BDD {
 
@@ -249,6 +250,22 @@ namespace BDD {
         if(ref != nullptr)
             ref->xref++;
         return *this;
+    }
+
+    // Change std::vector<node*> to std::vector<node_ref> in place by byte copying.
+    std::vector<node_ref> node_ref::nodes_postorder()
+    {
+        static_assert(sizeof(node_ref) == sizeof(node*)); // otherwise in place casting will not be possible.
+        std::vector<node*> nodes = ref->nodes_postorder();
+        std::vector<node*> empty_nodes;
+        std::vector<node_ref> node_refs;
+        static_assert(sizeof(std::vector<node*>) == sizeof(std::vector<node_ref>)); // otherwise in place casting will not be possible.
+        std::memcpy(&node_refs, &nodes, sizeof(nodes));
+        assert(node_refs.size() == nodes.size());
+        for(size_t i=0; i<nodes.size(); ++i)
+            node_refs[i] = node_ref(nodes[i]);
+        std::memcpy(&nodes, &empty_nodes, sizeof(nodes));
+        return node_refs;
     }
 
 }

@@ -34,3 +34,7 @@ add_executable(test_utility_functions test_utility_functions.cpp)
 target_link_libraries(test_utility_functions bdd)
 add_test(test_utility_functions test_utility_functions)
 
+add_executable(test_nodes_postorder test_nodes_postorder.cpp)
+target_link_libraries(test_nodes_postorder bdd)
+add_test(test_nodes_postorder test_nodes_postorder)
+
