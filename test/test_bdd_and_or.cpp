@@ -75,6 +75,9 @@ int main(int argc, char** argv)
     std::unordered_map<size_t,size_t> v_map = {{0,3},{1,4},{2,5}};
     node_ref simplex_345 = mgr.rebase(simplex, v_map);
     test(simplex_345.variables() == std::vector<size_t>({3,4,5}), "variables of rebased simplex do not match");
+    std::vector<size_t> v_map_vector = {3,4,5};
+    node_ref simplex_345_second = mgr.rebase(simplex, v_map_vector.begin(), v_map_vector.end());
+    test(simplex_345 == simplex_345_second, "rebase method error");
 
     nr_nodes_max = mgr.nr_nodes();
     }

@@ -48,8 +48,12 @@ namespace BDD {
             node_ref ite_rec(node_ref f, node_ref g, node_ref h);
 
             // make a copy of bdd rooted at node to variables given
+            // assume variable map is given by hash
             template<typename VAR_MAP>
             node_ref rebase(node_ref p, const VAR_MAP& var_map);
+            // assume variable map is given by vector
+            template<typename ITERATOR>
+            node_ref rebase(node_ref p, ITERATOR var_map_begin, ITERATOR var_map_end);
 
             // make private and add friend classes
             bdd_node_cache& get_node_cache() { return node_cache_; }
@@ -92,6 +96,34 @@ namespace BDD {
             const size_t v_orig = p->index;
             assert(var_map.count(v_orig) > 0);
             const size_t v_new = var_map.find(v_orig)->second;
+
+            assert(node_map.count(p->lo) > 0);
+            assert(node_map.count(p->hi) > 0);
+            node* lo_mapped = node_map.find(p->lo)->second;
+            node* hi_mapped = node_map.find(p->hi)->second;
+            node_map.insert({p, vars[v_new].unique_find(lo_mapped, hi_mapped)});
+        }
+
+        return node_ref(node_map.find(p.address())->second);
+    }
+
+    template<typename ITERATOR>
+    node_ref bdd_mgr::rebase(node_ref p, ITERATOR var_map_begin, ITERATOR var_map_end)
+    {
+        const size_t nr_vars = std::distance(var_map_begin, var_map_end);
+        assert(p.variables().back() <= nr_vars);
+        const size_t last_var = *std::max_element(var_map_begin, var_map_end);
+        for(size_t i=nr_variables(); i<=last_var; ++i)
+            add_variable();
+
+        const auto postorder = p.address()->nodes_postorder();
+        std::unordered_map<node*, node*> node_map;
+        node_map.insert({node_cache_.botsink(), node_cache_.botsink()});
+        node_map.insert({node_cache_.topsink(), node_cache_.topsink()});
+        for(node* p : postorder) {
+            const size_t v_orig = p->index;
+            assert(v_orig < nr_vars);
+            const size_t v_new = *(var_map_begin + v_orig);
 
             assert(node_map.count(p->lo) > 0);
             assert(node_map.count(p->hi) > 0);
