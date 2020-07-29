@@ -57,7 +57,7 @@ namespace BDD {
 
             // make private and add friend classes
             bdd_node_cache& get_node_cache() { return node_cache_; }
-            unique_table_page_cache& get_unique_table_page_cache() { return page_cache_; }
+            unique_table_page_caches& get_unique_table_page_cache() { return page_cache_; }
 
             void collect_garbage();
 
@@ -72,7 +72,7 @@ namespace BDD {
         private:
 
             bdd_node_cache node_cache_;
-            unique_table_page_cache page_cache_;
+            unique_table_page_caches page_cache_;
             memo_cache memo_;
             std::vector<var_struct> vars; // vars must be after node cache und page cache for correct destructor calling order
 

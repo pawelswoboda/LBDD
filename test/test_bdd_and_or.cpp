@@ -33,7 +33,16 @@ int main(int argc, char** argv)
     test_labeling(or_012, {0,1,1}, true);
     test_labeling(or_012, {1,1,1}, true);
 
-    test(or_012 == mgr.or_rec(mgr.projection(0), mgr.projection(1), mgr.projection(2)));
+    node_ref or_012_second = mgr.or_rec(mgr.projection(0), mgr.projection(1), mgr.projection(2));
+    test_labeling(or_012_second, {0,0,0}, false);
+    test_labeling(or_012_second, {1,0,0}, true);
+    test_labeling(or_012_second, {0,1,0}, true);
+    test_labeling(or_012_second, {0,0,1}, true);
+    test_labeling(or_012_second, {1,1,0}, true);
+    test_labeling(or_012_second, {1,0,1}, true);
+    test_labeling(or_012_second, {0,1,1}, true);
+    test_labeling(or_012_second, {1,1,1}, true);
+    test(or_012 == or_012_second);
 
     node_ref and_not01 = mgr.or_rec(mgr.negate(mgr.projection(0)), mgr.negate(mgr.projection(1)));
     test_labeling(and_not01, {0,0}, true);

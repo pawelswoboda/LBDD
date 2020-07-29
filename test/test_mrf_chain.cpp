@@ -188,23 +188,23 @@ int main(int argc, char** argv)
     test_mrf_chin_construction_equiv(mgr, 8, 5);
     test_mrf_chin_construction_equiv(mgr, 8, 7);
     test_mrf_chin_construction_equiv(mgr, 8, 8);
-    test_mrf_chin_construction_equiv(mgr, 8, 9);
-    test_mrf_chin_construction_equiv(mgr, 8, 10);
+    //test_mrf_chin_construction_equiv(mgr, 8, 9);
+    //test_mrf_chin_construction_equiv(mgr, 8, 10);
 
     test_mrf_chin_construction_equiv(mgr, 2, 2);
     test_mrf_chin_construction_equiv(mgr, 2, 3);
     test_mrf_chin_construction_equiv(mgr, 2, 4);
     test_mrf_chin_construction_equiv(mgr, 2, 5);
     test_mrf_chin_construction_equiv(mgr, 2, 6);
-    test_mrf_chin_construction_equiv(mgr, 2, 7);
-    test_mrf_chin_construction_equiv(mgr, 2, 8);
+    //test_mrf_chin_construction_equiv(mgr, 2, 7);
+    //test_mrf_chin_construction_equiv(mgr, 2, 8);
 
     test_mrf_chin_construction_equiv(mgr, 4, 2);
     test_mrf_chin_construction_equiv(mgr, 4, 3);
     test_mrf_chin_construction_equiv(mgr, 4, 4);
 
     node_ref mrf_1024_3 = create_mrf_chain_rec(mgr, 1024, 3);
-    node_ref mrf_8_10 = create_mrf_chain_rec(mgr, 8, 10);
+    //node_ref mrf_8_10 = create_mrf_chain_rec(mgr, 8, 10);
 
     const size_t nr_labels = 10;
     node_ref bdd = create_mrf_chain_rec(mgr, 2, nr_labels);
