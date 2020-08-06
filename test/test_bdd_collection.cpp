@@ -74,4 +74,23 @@ int main(int argc, char** argv)
     test(collection.bdd_and(0,1, nr_and_nodes-1) == std::numeric_limits<size_t>::max(), "node limit in bdd and not triggered.");
     test(collection.nr_bdds() == 3, "bdd added even though should not.");
     test(collection.bdd_and(0,1, nr_and_nodes) == 3, "node limit in bdd and triggered.");
+
+
+    std::vector<size_t> bdds_to_remove = {0,2};
+    collection.remove(bdds_to_remove.begin(), bdds_to_remove.end());
+    test(collection.nr_bdds() == 2, "too many bdds after remove.");
+
+    for(size_t l3 = 0; l3<1; ++l3)
+        for(size_t l4 = 0; l4<1; ++l4)
+            for(size_t l5 = 0; l5<1; ++l5)
+                for(size_t l6 = 0; l6<1; ++l6)
+                    for(size_t l7 = 0; l7<1; ++l7)
+                    {
+                        const std::array<size_t,8> labeling = {0,0,0,l3,l4,l5,l5,l7};
+                        const size_t sum = std::accumulate(labeling.begin(), labeling.end(), 0);
+                        if(sum == 0)
+                            test(collection.evaluate(0, labeling.begin(), labeling.end()) == true, "simplex constraints false negative.");
+                        else
+                            test(collection.evaluate(0, labeling.begin(), labeling.end()) == false, "simplex constraints false positive.");
+                    }
 }

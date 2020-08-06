@@ -2,7 +2,6 @@
 #include <deque>
 #include <cassert>
 #include <unordered_set>
-#include <iostream> // TODO: remove
 
 namespace BDD {
 
@@ -217,6 +216,22 @@ namespace BDD {
         }
 
         return true;
+    }
+
+    std::vector<size_t> bdd_collection::variables(const size_t bdd_nr) const
+    {
+        assert(bdd_nr < nr_bdds());
+        std::vector<size_t> vars;
+        for(size_t i=bdd_delimiters[bdd_nr]; i<bdd_delimiters[bdd_nr+1]-2; ++i)
+        {
+            if(vars.size() > 0 && bdd_instructions[i].index == vars.back())
+                continue;
+            vars.push_back(bdd_instructions[i].index);
+        }
+
+        std::sort(vars.begin(), vars.end());
+        vars.erase( std::unique(vars.begin(), vars.end() ), vars.end());
+        return vars;
     }
 
 }

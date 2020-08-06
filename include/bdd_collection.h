@@ -41,6 +41,10 @@ namespace BDD {
                 bool evaluate(const size_t bdd_nr, ITERATOR var_begin, ITERATOR var_end) const;
             template<typename ITERATOR>
                 size_t rebase(const size_t bdd_nr, ITERATOR var_map_begin, ITERATOR var_map_end);
+            std::vector<size_t> variables(const size_t bdd_nr) const;
+            // remove bdds with indices occurring in iterator
+            template<typename ITERATOR>
+                void remove(ITERATOR bdd_it_begin, ITERATOR bdd_it_end);
 
         private:
             size_t bdd_and_impl(const size_t i, const size_t j, const size_t node_limit);
@@ -100,6 +104,41 @@ namespace BDD {
             }
             bdd_delimiters.push_back(bdd_instructions.size());
             return bdd_delimiters.size()-2;
+        }
+
+    template<typename ITERATOR>
+        void bdd_collection::remove(ITERATOR bdd_it_begin, ITERATOR bdd_it_end)
+        {
+            const size_t nr_bdds_remove = std::distance(bdd_it_begin, bdd_it_end);
+            assert(std::distance(bdd_it_begin, bdd_it_end) <= nr_bdds());
+            assert(std::is_sorted(bdd_it_begin, bdd_it_end));
+
+            if(bdd_it_begin == bdd_it_end)
+                return;
+
+            auto bdd_it = bdd_it_begin;
+            size_t c = bdd_delimiters[*bdd_it]; // where to move bdd instruction
+            for(size_t bdd_nr=*bdd_it++; bdd_nr<nr_bdds(); ++bdd_nr)
+            {
+                if(bdd_nr == *bdd_it) // overwrite bdd
+                {
+                    ++bdd_it;
+                }
+                else
+                {
+                    std::copy(bdd_instructions.begin() + bdd_delimiters[bdd_nr],
+                            bdd_instructions.begin() + bdd_delimiters[bdd_nr+1],
+                            bdd_instructions.begin() + c);
+
+                    bdd_delimiters[bdd_nr] = c; 
+                    c += nr_bdd_nodes(bdd_nr);
+                }
+            }
+            assert(bdd_it == bdd_it_end);
+
+            bdd_delimiters.resize(bdd_delimiters.size() - nr_bdds_remove);
+            bdd_delimiters.back() = c;
+            bdd_instructions.resize(c);
         }
 
 }
