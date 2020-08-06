@@ -39,6 +39,8 @@ namespace BDD {
             size_t nr_bdd_nodes(const size_t i) const;
             template<typename ITERATOR>
                 bool evaluate(const size_t bdd_nr, ITERATOR var_begin, ITERATOR var_end) const;
+            template<typename ITERATOR>
+                size_t rebase(const size_t bdd_nr, ITERATOR var_map_begin, ITERATOR var_map_end);
 
         private:
             size_t bdd_and_impl(const size_t i, const size_t j, const size_t node_limit);
