@@ -58,6 +58,10 @@ namespace BDD {
 
     void var_struct::double_cache()
     {
+        // if maximum size is already reached, do not double
+        if(mask == 1048575)
+            return;
+
         assert(free == nr_free_slots_debug());
         node** old_page = base;
         const size_t old_mask = mask;

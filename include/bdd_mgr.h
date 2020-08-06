@@ -12,6 +12,7 @@
 
 namespace BDD {
 
+
     class bdd_mgr {
         public:
             bdd_mgr();
@@ -30,7 +31,7 @@ namespace BDD {
             template<class ITERATOR>
                 node_ref and_rec(ITERATOR nodes_begin, ITERATOR nodes_end);
             node_ref and_rec(node_ref f, node_ref g);
-            // return
+            // return and conjunction if it has fewer than node_limit nodes. Otherwise return null reference and abort early
             std::tuple<node_ref,size_t> and_rec_limited(node_ref f, node_ref g, const size_t node_limit);
 
             template<class... NODES>
@@ -68,6 +69,8 @@ namespace BDD {
                 node_ref simplex(BDD_ITERATOR begin, BDD_ITERATOR end);
             template<typename BDD_ITERATOR>
                 node_ref at_most_one(BDD_ITERATOR begin, BDD_ITERATOR end);
+
+            node_ref transform_to_base();
 
         private:
 

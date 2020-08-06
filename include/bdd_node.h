@@ -22,8 +22,8 @@ class node_struct
 
     void init_new_node(std::size_t v, node_struct* l, node_struct* h);
     std::size_t hash_code() const;
-    void mark();
-    void unmark();
+    void mark(); // TODO: make non-recursive and add recursive marking as well
+    void unmark(); // TODO: make non-recursive and add recursive marking as well
     bool marked() const;
 
     void recursively_revive();
@@ -36,6 +36,7 @@ class node_struct
 
     size_t nr_nodes();
     std::vector<node_struct*> nodes_postorder();
+    std::vector<node_struct*> nodes_bfs();
     std::vector<size_t> variables();
 
     void init_botsink(bdd_mgr* mgr);
@@ -94,6 +95,8 @@ class node_ref {
     bool is_terminal() const { return ref->is_terminal(); }
     size_t nr_nodes() const { return ref->nr_nodes(); }
     bdd_mgr* find_bdd_mgr() { return ref->find_bdd_mgr(); }
+    node_ref botsink();
+    node_ref topsink();
 
     size_t reference_count() const { return ref->xref; }
 
@@ -112,6 +115,12 @@ class node_ref {
     node_ref& operator=(const node_ref& o);
 
     std::vector<node_ref> nodes_postorder();
+    std::vector<node_ref> nodes_bfs();
+
+    bool marked() const { return ref->marked_; }
+    void mark() { ref->marked_ = 1; }
+    void unmark() { ref->marked_ = 0; }
+    void unmark_rec() { ref->unmark(); }
 
     private:
     node* ref = nullptr;

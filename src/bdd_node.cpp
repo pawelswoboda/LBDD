@@ -3,6 +3,7 @@
 #include <cassert>
 #include <algorithm>
 #include <cstring>
+#include <deque>
 
 namespace BDD {
 
@@ -77,6 +78,39 @@ namespace BDD {
             hi->nodes_postorder_impl(n); 
         n.push_back(this);
     }
+
+    std::vector<node*> node::nodes_bfs()
+    {
+        assert(marked_ == 0);
+        std::vector<node*> nodes;
+        std::deque<node*> dq;
+
+        dq.push_back(this);
+        this->marked_ = 1;
+        while(!dq.empty())
+        {
+            node* n = dq.front();
+            dq.pop_front();
+            assert(n->marked_ == 1);
+            nodes.push_back(n);
+
+            if(!n->lo->is_terminal() && n->lo->marked_ == 0)
+            {
+                dq.push_back(n->lo);
+                n->lo->marked_ = 1;
+            }
+            if(!n->hi->is_terminal() && n->hi->marked_ == 0)
+            {
+                dq.push_back(n->hi);
+                n->hi->marked_ = 1;
+            }
+        }
+
+        unmark();
+        assert(nodes.size() == nr_nodes());
+        return nodes; 
+    }
+
 
     void node::init_botsink(bdd_mgr* mgr)
     {
@@ -253,12 +287,9 @@ namespace BDD {
     }
 
     // Change std::vector<node*> to std::vector<node_ref> in place by byte copying.
-    std::vector<node_ref> node_ref::nodes_postorder()
+    void convert_node_to_node_ref(std::vector<node*>& nodes, std::vector<node_ref>& node_refs)
     {
-        static_assert(sizeof(node_ref) == sizeof(node*)); // otherwise in place casting will not be possible.
-        std::vector<node*> nodes = ref->nodes_postorder();
         std::vector<node*> empty_nodes;
-        std::vector<node_ref> node_refs;
         static_assert(sizeof(std::vector<node*>) == sizeof(std::vector<node_ref>)); // otherwise in place casting will not be possible.
         std::memcpy(&node_refs, &nodes, sizeof(nodes));
         assert(node_refs.size() == nodes.size());
@@ -269,8 +300,32 @@ namespace BDD {
             nodes[i] = nullptr;
             node_refs[i] = n;
         }
-        std::memcpy(&nodes, &empty_nodes, sizeof(nodes));
+        std::memcpy(&nodes, &empty_nodes, sizeof(nodes)); 
+    }
+
+    std::vector<node_ref> node_ref::nodes_postorder()
+    {
+        std::vector<node*> nodes = ref->nodes_postorder();
+        std::vector<node_ref> node_refs;
+        convert_node_to_node_ref(nodes, node_refs);
         return node_refs;
     }
+
+    std::vector<node_ref> node_ref::nodes_bfs()
+    {
+        std::vector<node*> nodes = ref->nodes_bfs();
+        std::vector<node_ref> node_refs;
+        convert_node_to_node_ref(nodes, node_refs);
+        return node_refs;
+    }
+
+    node_ref node_ref::botsink() 
+    { 
+        return node_ref(find_bdd_mgr()->botsink()); 
+    }
+
+    node_ref node_ref::topsink() 
+    { 
+        return node_ref(find_bdd_mgr()->topsink()); }
 
 }

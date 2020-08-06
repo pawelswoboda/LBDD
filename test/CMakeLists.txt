@@ -38,3 +38,11 @@ add_executable(test_nodes_postorder test_nodes_postorder.cpp)
 target_link_libraries(test_nodes_postorder bdd)
 add_test(test_nodes_postorder test_nodes_postorder)
 
+add_executable(test_nodes_bfs test_nodes_bfs.cpp)
+target_link_libraries(test_nodes_bfs bdd)
+add_test(test_nodes_bfs test_nodes_bfs)
+
+add_executable(test_bdd_collection test_bdd_collection.cpp)
+target_link_libraries(test_bdd_collection bdd)
+add_test(test_bdd_collection test_bdd_collection)
+
