@@ -40,7 +40,7 @@ namespace BDD {
             template<typename ITERATOR>
                 bool evaluate(const size_t bdd_nr, ITERATOR var_begin, ITERATOR var_end) const;
             template<typename ITERATOR>
-                size_t rebase(const size_t bdd_nr, ITERATOR var_map_begin, ITERATOR var_map_end);
+                void rebase(const size_t bdd_nr, ITERATOR var_map_begin, ITERATOR var_map_end);
             std::vector<size_t> variables(const size_t bdd_nr) const;
             // remove bdds with indices occurring in iterator
             template<typename ITERATOR>
@@ -86,13 +86,13 @@ namespace BDD {
         }
 
     template<typename ITERATOR>
-        size_t bdd_collection::rebase(const size_t bdd_nr, ITERATOR var_map_begin, ITERATOR var_map_end)
+        void bdd_collection::rebase(const size_t bdd_nr, ITERATOR var_map_begin, ITERATOR var_map_end)
         {
             assert(bdd_nr < nr_bdds());
             const size_t offset = bdd_instructions.size();
             for(size_t i=bdd_delimiters[bdd_nr]; i<bdd_delimiters[bdd_nr+1]; ++i)
             {
-                const bdd_instruction& bdd = bdd_instructions[i];
+                bdd_instruction& bdd = bdd_instructions[i];
                 assert(bdd.index < std::distance(var_map_begin, var_map_end) || bdd.is_terminal());
                 const size_t rebase_index = [&]() {
                     if(bdd.is_terminal())
@@ -100,10 +100,11 @@ namespace BDD {
                     else
                         return *(var_map_begin + bdd.index);
                 }();
-                bdd_instructions.push_back({bdd.lo + offset, bdd.hi + offset, rebase_index});
+                bdd.index = rebase_index;
+                //bdd_instructions.push_back({bdd.lo + offset, bdd.hi + offset, rebase_index});
             }
-            bdd_delimiters.push_back(bdd_instructions.size());
-            return bdd_delimiters.size()-2;
+            //bdd_delimiters.push_back(bdd_instructions.size());
+            //return bdd_delimiters.size()-2;
         }
 
     template<typename ITERATOR>

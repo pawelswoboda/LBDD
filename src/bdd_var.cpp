@@ -216,7 +216,7 @@ namespace BDD {
                 for(size_t j = k+1;; ++j)
                 {
                     const size_t jj = j & mask;
-                    node* p = fetch_node(j);
+                    node* p = fetch_node(jj);
                     if(p == nullptr)
                     {
                         k = j;
@@ -224,7 +224,7 @@ namespace BDD {
                     }
                     if(p->dead())
                     {
-                        store_node(j, nullptr);
+                        store_node(jj, nullptr);
                         free++;
                     }
                     else
