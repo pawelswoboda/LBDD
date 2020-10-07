@@ -12,6 +12,7 @@
 
 namespace BDD {
 
+    class bdd_collection; // forward declaration for enabling import from bdds
 
     class bdd_mgr {
         public:
@@ -25,6 +26,8 @@ namespace BDD {
             node_ref negate(node_ref p);
             node_ref topsink() const { return node_ref(node_cache_.topsink()); }
             node_ref botsink() const { return node_ref(node_cache_.botsink()); }
+
+            node_ref unique_find(const size_t var, node_ref lo, node_ref hi);
 
             template<class... NODES>
                 node_ref and_rec(node_ref p, NODES...);

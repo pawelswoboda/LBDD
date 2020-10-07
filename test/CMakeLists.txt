@@ -46,3 +46,6 @@ add_executable(test_bdd_collection test_bdd_collection.cpp)
 target_link_libraries(test_bdd_collection bdd)
 add_test(test_bdd_collection test_bdd_collection)
 
+add_executable(test_bdd_multi_and test_bdd_multi_and.cpp)
+target_link_libraries(test_bdd_multi_and bdd)
+add_test(test_bdd_multi_and test_bdd_multi_and)

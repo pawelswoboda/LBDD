@@ -1,4 +1,5 @@
 #include "bdd_mgr.h"
+#include "bdd_collection.h"
 #include <cassert>
 
 namespace BDD {
@@ -48,6 +49,12 @@ namespace BDD {
             assert(v < nr_variables());
             return node_ref(vars[v].unique_find( negate(p.low()).ref, negate(p.high()).ref));
         }
+    }
+
+    node_ref bdd_mgr::unique_find(const size_t var, node_ref lo, node_ref hi)
+    {
+        assert(var < nr_variables());
+        return node_ref(vars[var].unique_find(lo.address(), hi.address()));
     }
 
     node_ref bdd_mgr::and_rec(node_ref f, node_ref g)
@@ -136,10 +143,14 @@ namespace BDD {
         }();
 
         auto [r0, r0_nr_nodes] = and_rec_limited(&v == &f_var ? f.low() : f, &v == &g_var ? g.low() : g, node_limit);
+        assert((r0 == nullptr) == (r0_nr_nodes == std::numeric_limits<size_t>::max()));
+        assert(r0.ref != nullptr || r0_nr_nodes == std::numeric_limits<size_t>::max());
         if(r0_nr_nodes > node_limit)
             return {node_ref(nullptr), std::numeric_limits<size_t>::max()};
         auto [r1, r1_nr_nodes] = and_rec_limited(&v == &f_var ? f.high() : f, &v == &g_var ? g.high() : g, node_limit);
-        if(r0_nr_nodes + r1_nr_nodes > node_limit)
+        assert((r1 == nullptr) == (r1_nr_nodes == std::numeric_limits<size_t>::max()));
+        assert(r1.ref != nullptr || r1_nr_nodes == std::numeric_limits<size_t>::max());
+        if(r0_nr_nodes == std::numeric_limits<size_t>::max() || r1_nr_nodes == std::numeric_limits<size_t>::max() || r0_nr_nodes + r1_nr_nodes > node_limit)
             return {node_ref(nullptr), std::numeric_limits<size_t>::max()};
         
         node* r = v.unique_find(r0.ref, r1.ref);

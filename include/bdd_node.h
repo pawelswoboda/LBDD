@@ -112,6 +112,7 @@ class node_ref {
     friend class bdd_mgr;
 
     bool operator==(const node_ref& o) const { return ref == o.ref; }
+    bool operator!=(const node_ref& o) const { return !(ref == o.ref); }
     node_ref& operator=(const node_ref& o);
 
     std::vector<node_ref> nodes_postorder();
