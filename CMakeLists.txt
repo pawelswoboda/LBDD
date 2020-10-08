@@ -12,10 +12,10 @@ IF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/compile_commands.json" )
         )
 ENDIF()
 
-add_library(bdd INTERFACE)
-target_compile_features(bdd INTERFACE cxx_std_17) 
-target_compile_options(bdd INTERFACE -march=native)
-target_include_directories(bdd INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+add_library(LBDD INTERFACE)
+target_compile_features(LBDD INTERFACE cxx_std_17) 
+target_compile_options(LBDD INTERFACE -march=native)
+target_include_directories(LBDD INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 enable_testing()
 

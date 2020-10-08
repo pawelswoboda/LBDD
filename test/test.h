@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <stdexcept>
 #include "bdd_mgr.h"
 
 inline void test(const bool cond, const std::string error = "")

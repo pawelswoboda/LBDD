@@ -1,51 +1,51 @@
 add_executable(test_bdd_node_cache test_bdd_node_cache.cpp)
-target_link_libraries(test_bdd_node_cache bdd)
+target_link_libraries(test_bdd_node_cache LBDD)
 add_test(test_bdd_node_cache test_bdd_node_cache)
 
 add_executable(test_unique_table_page_cache test_unique_table_page_cache.cpp)
-target_link_libraries(test_unique_table_page_cache bdd)
+target_link_libraries(test_unique_table_page_cache LBDD)
 add_test(test_unique_table_page_cache test_unique_table_page_cache)
 
 add_executable(test_variable_addition test_variable_addition.cpp)
-target_link_libraries(test_variable_addition bdd_mgr bdd)
+target_link_libraries(test_variable_addition bdd_mgr LBDD)
 add_test(test_variable_addition test_variable_addition)
 
 add_executable(test_bdd_projection test_bdd_projection.cpp)
-target_link_libraries(test_bdd_projection bdd)
+target_link_libraries(test_bdd_projection LBDD)
 add_test(test_bdd_projection test_bdd_projection)
 
 add_executable(test_bdd_and_or test_bdd_and_or.cpp)
-target_link_libraries(test_bdd_and_or bdd)
+target_link_libraries(test_bdd_and_or LBDD)
 add_test(test_bdd_and_or test_bdd_and_or)
 
 add_executable(test_ite test_ite.cpp)
-target_link_libraries(test_ite bdd)
+target_link_libraries(test_ite LBDD)
 add_test(test_ite test_ite)
 
 add_executable(test_mrf_chain test_mrf_chain.cpp)
-target_link_libraries(test_mrf_chain bdd)
+target_link_libraries(test_mrf_chain LBDD)
 add_test(test_mrf_chain test_mrf_chain)
 
 add_executable(test_bdd_and_limited test_bdd_and_limited.cpp)
-target_link_libraries(test_bdd_and_limited bdd)
+target_link_libraries(test_bdd_and_limited LBDD)
 add_test(test_bdd_and_limited test_bdd_and_limited)
 
 add_executable(test_utility_functions test_utility_functions.cpp)
-target_link_libraries(test_utility_functions bdd)
+target_link_libraries(test_utility_functions LBDD)
 add_test(test_utility_functions test_utility_functions)
 
 add_executable(test_nodes_postorder test_nodes_postorder.cpp)
-target_link_libraries(test_nodes_postorder bdd)
+target_link_libraries(test_nodes_postorder LBDD)
 add_test(test_nodes_postorder test_nodes_postorder)
 
 add_executable(test_nodes_bfs test_nodes_bfs.cpp)
-target_link_libraries(test_nodes_bfs bdd)
+target_link_libraries(test_nodes_bfs LBDD)
 add_test(test_nodes_bfs test_nodes_bfs)
 
 add_executable(test_bdd_collection test_bdd_collection.cpp)
-target_link_libraries(test_bdd_collection bdd)
+target_link_libraries(test_bdd_collection LBDD)
 add_test(test_bdd_collection test_bdd_collection)
 
 add_executable(test_bdd_multi_and test_bdd_multi_and.cpp)
-target_link_libraries(test_bdd_multi_and bdd)
+target_link_libraries(test_bdd_multi_and LBDD)
 add_test(test_bdd_multi_and test_bdd_multi_and)
