@@ -2,6 +2,7 @@
 #include "bdd_mgr.h"
 #include <cassert>
 #include <algorithm>
+#include <stdexcept>
 
 namespace BDD {
 
