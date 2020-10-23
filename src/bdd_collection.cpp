@@ -276,7 +276,8 @@ namespace BDD {
     {
         assert(bdd_delimiters.back() == bdd_instructions.size());
 
-        auto nodes = root.nodes_bfs();
+        auto nodes = root.nodes_postorder();
+        std::reverse(nodes.begin(), nodes.end());
         for(size_t i=0; i<nodes.size(); ++i)
         {
             assert(!nodes[i].is_terminal());
@@ -298,6 +299,8 @@ namespace BDD {
         {
             assert(node_ref_hash.count(nodes[i].low()) > 0);
             assert(node_ref_hash.count(nodes[i].high()) > 0);
+            assert(i < node_ref_hash.find(nodes[i].low())->second);
+            assert(i < node_ref_hash.find(nodes[i].high())->second);
             bdd_instructions[offset + i].lo = node_ref_hash.find(nodes[i].low())->second;
             bdd_instructions[offset + i].hi = node_ref_hash.find(nodes[i].high())->second;
         }
