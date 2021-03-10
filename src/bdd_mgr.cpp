@@ -312,4 +312,15 @@ namespace BDD {
         memo_.purge();
     }
 
+    node_ref bdd_mgr::add_bdd(bdd_collection& bdd_col, const size_t bdd_nr)
+    {
+        assert(bdd_nr < bdd_col.nr_bdds());
+        auto [bdd_begin, bdd_end] = bdd_col.get_bdd_instructions(bdd_nr);
+        for(auto bdd_it = bdd_end; bdd_it != bdd_begin; --bdd_it)
+        {
+
+        }
+    }
+
+
 }

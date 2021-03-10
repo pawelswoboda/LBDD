@@ -130,6 +130,8 @@ namespace BDD {
 
             template<typename STREAM>
                 void export_graphviz(const size_t bdd_nr, STREAM& s) const;
+            auto get_bdd_instructions(const size_t bdd_nr) const { return std::make_pair(bdd_instructions.begin() + bdd_delimiters[bdd_nr], bdd_instructions.begin() + bdd_delimiters[bdd_nr+1]); }
+            auto get_reverse_bdd_instructions(const size_t bdd_nr) const { return std::make_pair(bdd_instructions.begin() + bdd_delimiters[bdd_nr], bdd_instructions.begin() + bdd_delimiters[bdd_nr+1]); }
 
         private:
             size_t bdd_and_impl(const size_t i, const size_t j, const size_t node_limit);

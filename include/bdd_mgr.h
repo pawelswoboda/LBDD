@@ -83,6 +83,7 @@ namespace BDD {
                 node_ref cardinality(BDD_ITERATOR begin, BDD_ITERATOR end, const size_t b);
 
             node_ref transform_to_base();
+            node_ref add_bdd(bdd_collection& bdd_col, const size_t bdd_nr);
 
         private:
 
