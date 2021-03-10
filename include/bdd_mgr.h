@@ -72,6 +72,15 @@ namespace BDD {
                 node_ref simplex(BDD_ITERATOR begin, BDD_ITERATOR end);
             template<typename BDD_ITERATOR>
                 node_ref at_most_one(BDD_ITERATOR begin, BDD_ITERATOR end);
+            template<typename BDD_ITERATOR>
+                node_ref at_least_one(BDD_ITERATOR begin, BDD_ITERATOR end);
+
+            template<typename BDD_ITERATOR>
+                node_ref at_least(BDD_ITERATOR begin, BDD_ITERATOR end, const size_t b);
+            template<typename BDD_ITERATOR>
+                node_ref at_most(BDD_ITERATOR begin, BDD_ITERATOR end, const size_t b);
+            template<typename BDD_ITERATOR>
+                node_ref cardinality(BDD_ITERATOR begin, BDD_ITERATOR end, const size_t b);
 
             node_ref transform_to_base();
 
@@ -267,7 +276,7 @@ namespace BDD {
         node_ref bdd_mgr::at_most_one(BDD_ITERATOR begin, BDD_ITERATOR end)
         {
             assert(std::distance(begin, end) > 0);
-            const std::size_t n = std::distance(begin, end);
+            const size_t n = std::distance(begin, end);
             if(n == 1)
                 return node_ref(node_cache_.topsink());
             if(n == 2)
@@ -287,5 +296,111 @@ namespace BDD {
                     and_rec(at_most_one_1, all_false_2),
                     and_rec(at_most_one_2, all_false_1)
                     ); 
+        }
+
+    template<typename BDD_ITERATOR>
+        node_ref bdd_mgr::at_least_one(BDD_ITERATOR begin, BDD_ITERATOR end)
+        {
+            return negate(all_false(begin, end));
+        }
+
+    template<typename BDD_ITERATOR>
+        node_ref bdd_mgr::at_least(BDD_ITERATOR begin, BDD_ITERATOR end, const size_t b)
+        {
+            assert(std::distance(begin, end) > 0);
+            const size_t n = std::distance(begin, end);
+
+            if(n < b)
+                return node_cache_.botsink();
+
+            if(n == 1 && b == 1)
+                return *begin;
+            if(b == 0)
+                return node_cache_.topsink();
+
+            std::vector<node_ref> left;
+            left.reserve(b+1);
+            for(size_t b_left=0; b_left<=b; ++b_left)
+                left.push_back(at_least(begin, begin + n/2, b_left));
+
+            std::vector<node_ref> right;
+            right.reserve(b+1);
+            for(size_t b_right=0; b_right<=b; ++b_right)
+                right.push_back(at_least(begin + n/2, end, b_right));
+
+            std::vector<node_ref> combine;
+            combine.reserve(b+1);
+            for(size_t b_left=0; b_left<=b; ++b_left)
+                combine.push_back(and_rec(left[b_left], right[b-b_left]));
+
+            return or_rec(combine.begin(), combine.end()); 
+        }
+
+    template<typename BDD_ITERATOR>
+        node_ref bdd_mgr::at_most(BDD_ITERATOR begin, BDD_ITERATOR end, const size_t b)
+        {
+            assert(std::distance(begin, end) > 0);
+            const size_t n = std::distance(begin, end);
+
+            if(n < b)
+                return node_cache_.botsink();
+
+            if(n == 1 && b == 1)
+                return node_cache_.topsink();
+            if(n == 1 && b == 0)
+                return negate(*begin);
+            if(b == 0)
+                return all_false(begin, end);
+
+            std::vector<node_ref> left;
+            left.reserve(b+1);
+            for(size_t b_left=0; b_left<=b; ++b_left)
+                left.push_back(at_most(begin, begin + n/2, b_left));
+
+            std::vector<node_ref> right;
+            right.reserve(b+1);
+            for(size_t b_right=0; b_right<=b; ++b_right)
+                right.push_back(at_most(begin + n/2, end, b_right));
+
+            std::vector<node_ref> combine;
+            combine.reserve(b+1);
+            for(size_t b_left=0; b_left<=b; ++b_left)
+                combine.push_back(and_rec(left[b_left], right[b-b_left]));
+
+            return or_rec(combine.begin(), combine.end()); 
+        }
+
+    template<typename BDD_ITERATOR>
+        node_ref bdd_mgr::cardinality(BDD_ITERATOR begin, BDD_ITERATOR end, const size_t b)
+        {
+            assert(std::distance(begin, end) > 0);
+            const size_t n = std::distance(begin, end);
+
+            if(n < b)
+                return node_cache_.botsink();
+
+            if(n == 1 && b == 1)
+                return *begin;
+            if(n == 1 && b == 0)
+                return negate(*begin);
+            if(b == 0)
+                return all_false(begin, end);
+
+            std::vector<node_ref> left;
+            left.reserve(b+1);
+            for(size_t b_left=0; b_left<=b; ++b_left)
+                left.push_back(cardinality(begin, begin + n/2, b_left));
+
+            std::vector<node_ref> right;
+            right.reserve(b+1);
+            for(size_t b_right=0; b_right<=b; ++b_right)
+                right.push_back(cardinality(begin + n/2, end, b_right));
+
+            std::vector<node_ref> combine;
+            combine.reserve(b+1);
+            for(size_t b_left=0; b_left<=b; ++b_left)
+                combine.push_back(and_rec(left[b_left], right[b-b_left]));
+
+            return or_rec(combine.begin(), combine.end()); 
         }
 }

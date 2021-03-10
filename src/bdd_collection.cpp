@@ -331,13 +331,11 @@ namespace BDD {
 
                 if(bdd_instructions[i].is_botsink())
                 {
-                    std::cout << "returning botsink\n";
                     return mgr.botsink();
                 }
 
                 if(bdd_instructions[i].is_topsink())
                 {
-                    std::cout << "returning topsink\n";
                     return mgr.topsink();
                 }
 

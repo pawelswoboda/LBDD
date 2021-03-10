@@ -128,6 +128,9 @@ namespace BDD {
 
             bdd_collection_entry operator[](const size_t bdd_nr);
 
+            template<typename STREAM>
+                void export_graphviz(const size_t bdd_nr, STREAM& s) const;
+
         private:
             size_t bdd_and_impl(const size_t i, const size_t j, const size_t node_limit);
             template<size_t N>
@@ -347,6 +350,75 @@ namespace BDD {
         void bdd_collection_entry::rebase(const VAR_MAP& var_map) 
         { 
             bdd_col.rebase(bdd_nr, var_map);
+        }
+
+
+    template<typename STREAM>
+        void bdd_collection::export_graphviz(const size_t bdd_nr, STREAM& s) const
+        {
+            assert(bdd_nr < nr_bdds());
+            s << "digraph BDD\n";
+            s << "{\n";
+
+            std::unordered_map<size_t,std::string> clusters;
+            std::unordered_map<size_t, size_t> cluster_nodes;
+
+            for(size_t i=bdd_delimiters[bdd_nr]; i<bdd_delimiters[bdd_nr+1]; ++i)
+            {
+                const bdd_instruction& bdd_instr = bdd_instructions[i];
+                if(bdd_instr.is_terminal())
+                {
+                    std::string& str = clusters[std::numeric_limits<size_t>::max()];
+                    if(bdd_instr.is_topsink())
+                        str += std::to_string(i - bdd_delimiters[bdd_nr]) + " [label=\"top\"];\n";
+                    else if(bdd_instr.is_botsink())
+                        str += std::to_string(i - bdd_delimiters[bdd_nr]) + " [label=\"bot\"];\n";
+                    else
+                        assert(false); 
+                }
+                else
+                {
+                    std::string& str = clusters[bdd_instr.index];
+                    str += std::to_string(i - bdd_delimiters[bdd_nr]) + " [label=\"" += std::to_string(bdd_instr.index) + "\"];\n"; 
+                    cluster_nodes[bdd_instr.index] = i - bdd_delimiters[bdd_nr];
+                }
+
+                /*
+                if(bdd_instr.is_terminal())
+                    s << i - bdd_delimiters[bdd_nr] << " [label=\"top\"];\n";
+                else if(bdd_instr.is_botsink())
+                    s << i - bdd_delimiters[bdd_nr] << " [label=\"bot\"];\n";
+                else
+                    s << i - bdd_delimiters[bdd_nr] << " [label=\"" << bdd_instr.index << "\"];\n";
+                    */
+            }
+
+            for(auto& [idx, str] : clusters)
+            {
+                s << "subgraph cluster_" << idx << " {\n";
+                s << str;
+                s << "color = blue\n";
+                s << "}\n"; 
+            }
+
+            // add invisible arrows between clusters
+            std::vector<std::array<size_t,2>> cluster_nodes2;
+            for(auto [x,y] : cluster_nodes)
+                cluster_nodes2.push_back({x,y});
+            std::sort(cluster_nodes2.begin(), cluster_nodes2.end(), [](const auto a, const auto b) { return a[0] < b[0]; });
+            for(size_t c=0; c<cluster_nodes2.size()-1; ++c)
+                s << cluster_nodes2[c][1] << " -> " << cluster_nodes2[c+1][1] << " [style=invis];\n";
+
+            for(size_t i=bdd_delimiters[bdd_nr]; i<bdd_delimiters[bdd_nr+1]; ++i)
+            {
+                const bdd_instruction& bdd_instr = bdd_instructions[i];
+                if(bdd_instr.is_terminal())
+                    continue;
+
+                s << i - bdd_delimiters[bdd_nr] << " -> " << bdd_instr.hi - bdd_delimiters[bdd_nr] << ";\n";
+                s << i - bdd_delimiters[bdd_nr] << " -> " << bdd_instr.lo - bdd_delimiters[bdd_nr] << "[style=\"dashed\"];\n";
+            } 
+            s << "}\n";
         }
 
 }

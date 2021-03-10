@@ -24,6 +24,9 @@ int main(int argc, char** argv)
     node_ref neg_at_most_one = mgr.negate(at_most_one);
     node_ref all_false = mgr.all_false(vars.begin(), vars.begin()+2);
     node_ref not_all_false = mgr.negate(all_false);
+    node_ref cardinality_2 = mgr.cardinality(vars.begin(), vars.begin()+2, 2);
+    node_ref at_most_2 = mgr.at_most(vars.begin(), vars.begin()+2, 2);
+    node_ref at_least_2 = mgr.at_least(vars.begin(), vars.begin()+2, 2);
 
     for(size_t l0=0; l0<=1; ++l0)
         for(size_t l1=0; l1<=1; ++l1)
@@ -38,6 +41,9 @@ int main(int argc, char** argv)
 
             test_labeling(all_false, labeling.begin(), labeling.end(), sum == 0);
             test_labeling(not_all_false, labeling.begin(), labeling.end(), sum != 0);
+            test_labeling(cardinality_2, labeling.begin(), labeling.end(), sum == 2);
+            test_labeling(at_most_2, labeling.begin(), labeling.end(), sum <= 2);
+            test_labeling(at_least_2, labeling.begin(), labeling.end(), sum >= 2);
         }
     }
 
@@ -49,6 +55,9 @@ int main(int argc, char** argv)
     node_ref neg_at_most_one = mgr.negate(at_most_one);
     node_ref all_false = mgr.all_false(vars.begin(), vars.begin()+3);
     node_ref not_all_false = mgr.negate(all_false);
+    node_ref cardinality_2 = mgr.cardinality(vars.begin(), vars.begin()+3, 2);
+    node_ref at_most_2 = mgr.at_most(vars.begin(), vars.begin()+3, 2);
+    node_ref at_least_2 = mgr.at_least(vars.begin(), vars.begin()+3, 2);
 
     for(size_t l0=0; l0<=1; ++l0)
         for(size_t l1=0; l1<=1; ++l1)
@@ -66,6 +75,9 @@ int main(int argc, char** argv)
 
                 test_labeling(all_false, labeling.begin(), labeling.end(), sum == 0);
                 test_labeling(not_all_false, labeling.begin(), labeling.end(), sum != 0);
+                test_labeling(cardinality_2, labeling.begin(), labeling.end(), sum == 2);
+                test_labeling(at_most_2, labeling.begin(), labeling.end(), sum <= 2);
+                test_labeling(at_least_2, labeling.begin(), labeling.end(), sum >= 2);
             }
     }
 
@@ -77,6 +89,9 @@ int main(int argc, char** argv)
     node_ref neg_at_most_one = mgr.negate(at_most_one);
     node_ref all_false = mgr.all_false(vars.begin(), vars.begin()+4);
     node_ref not_all_false = mgr.negate(all_false);
+    node_ref cardinality_2 = mgr.cardinality(vars.begin(), vars.begin()+4, 2);
+    node_ref at_most_2 = mgr.at_most(vars.begin(), vars.begin()+4, 2);
+    node_ref at_least_2 = mgr.at_least(vars.begin(), vars.begin()+4, 2);
 
     for(size_t l0=0; l0<=1; ++l0)
         for(size_t l1=0; l1<=1; ++l1)
@@ -95,6 +110,9 @@ int main(int argc, char** argv)
 
                         test_labeling(all_false, labeling.begin(), labeling.end(), sum == 0);
                         test_labeling(not_all_false, labeling.begin(), labeling.end(), sum != 0);
+            test_labeling(cardinality_2, labeling.begin(), labeling.end(), sum == 2);
+            test_labeling(at_most_2, labeling.begin(), labeling.end(), sum <= 2);
+            test_labeling(at_least_2, labeling.begin(), labeling.end(), sum >= 2);
                     }
     }
 
@@ -106,6 +124,9 @@ int main(int argc, char** argv)
     node_ref neg_at_most_one = mgr.negate(at_most_one);
     node_ref all_false = mgr.all_false(vars.begin(), vars.begin()+5);
     node_ref not_all_false = mgr.negate(all_false);
+    node_ref cardinality_2 = mgr.cardinality(vars.begin(), vars.begin()+5, 2);
+    node_ref at_most_2 = mgr.at_most(vars.begin(), vars.begin()+5, 2);
+    node_ref at_least_2 = mgr.at_least(vars.begin(), vars.begin()+5, 2);
 
     for(size_t l0=0; l0<=1; ++l0)
         for(size_t l1=0; l1<=1; ++l1)
@@ -125,7 +146,17 @@ int main(int argc, char** argv)
 
                         test_labeling(all_false, labeling.begin(), labeling.end(), sum == 0);
                         test_labeling(not_all_false, labeling.begin(), labeling.end(), sum != 0);
+                        test_labeling(cardinality_2, labeling.begin(), labeling.end(), sum == 2);
+                        test_labeling(at_most_2, labeling.begin(), labeling.end(), sum <= 2);
+                        test_labeling(at_least_2, labeling.begin(), labeling.end(), sum >= 2);
                     }
+    }
+
+    for(size_t n=2; n<=5; ++n)
+    {
+        test(mgr.simplex(vars.begin(), vars.begin()+n) == mgr.cardinality(vars.begin(), vars.begin()+n, 1));
+        test(mgr.at_least_one(vars.begin(), vars.begin()+n) == mgr.at_least(vars.begin(), vars.begin()+n, 1));
+        test(mgr.at_most_one(vars.begin(), vars.begin()+n) == mgr.at_most(vars.begin(), vars.begin()+n, 1));
     }
     
 

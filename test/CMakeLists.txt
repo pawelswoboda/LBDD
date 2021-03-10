@@ -49,3 +49,11 @@ add_test(test_bdd_collection test_bdd_collection)
 add_executable(test_bdd_multi_and test_bdd_multi_and.cpp)
 target_link_libraries(test_bdd_multi_and LBDD)
 add_test(test_bdd_multi_and test_bdd_multi_and)
+
+add_executable(test_bdd_exactly_one_solution test_bdd_exactly_one_solution.cpp)
+target_link_libraries(test_bdd_exactly_one_solution LBDD)
+add_test(test_bdd_exactly_one_solution test_bdd_exactly_one_solution)
+
+add_executable(test_bdd_collection_and test_bdd_collection_and.cpp)
+target_link_libraries(test_bdd_collection_and LBDD)
+add_test(test_bdd_collection_and test_bdd_collection_and)

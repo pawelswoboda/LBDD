@@ -184,8 +184,7 @@ namespace BDD {
         unmark();
         std::sort(v.begin(), v.end());
         v.erase( std::unique(v.begin(), v.end() ), v.end());
-        return v;
-
+        return v; 
     }
 
     void node_struct::variables_impl(std::vector<size_t>& v)
@@ -200,6 +199,20 @@ namespace BDD {
             lo->variables_impl(v);
         if(hi->marked_ == 0)
             hi->variables_impl(v); 
+    }
+
+    bool node_struct::exactly_one_solution()
+    {
+        if(is_topsink())
+            return true;
+        if(is_botsink())
+            return false;
+        // there must be exacty one arc that is botsink and one that is not
+        if(lo->is_botsink())
+            return hi->exactly_one_solution();
+        if(hi->is_botsink())
+            return lo->exactly_one_solution(); 
+        return false; 
     }
 
     // TODO: make implementations operate without stack
@@ -258,8 +271,8 @@ namespace BDD {
     node_ref::node_ref(const node_ref& o)
         : ref(o.ref)
     {
-        assert(ref != nullptr);
-        ref->xref++;
+        if(ref != nullptr)
+            ref->xref++;
     }
 
     node_ref::~node_ref()
@@ -275,6 +288,10 @@ namespace BDD {
     {
         std::swap(ref, o.ref);
     }
+
+    node_ref::node_ref()
+        : ref(nullptr)
+    {}
 
     node_ref& node_ref::operator=(const node_ref& o)
     { 

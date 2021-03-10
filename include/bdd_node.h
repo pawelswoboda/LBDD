@@ -38,6 +38,7 @@ class node_struct
     std::vector<node_struct*> nodes_postorder();
     std::vector<node_struct*> nodes_bfs();
     std::vector<size_t> variables();
+    bool exactly_one_solution();
 
     void init_botsink(bdd_mgr* mgr);
     bool is_botsink() const;
@@ -86,6 +87,7 @@ class node_ref {
     node_ref(node* r);
     ~node_ref();
     node_ref(node_ref&& r);
+    node_ref();
     node* address() const { return ref; }
     bdd_mgr& get_bdd_mgr() const;
     node_ref low() { return node_ref(ref->lo); }
@@ -94,6 +96,7 @@ class node_ref {
     bool is_topsink() const { return ref->is_topsink(); }
     bool is_terminal() const { return ref->is_terminal(); }
     size_t nr_nodes() const { return ref->nr_nodes(); }
+    bool exactly_one_solution() const { return ref->exactly_one_solution(); }
     bdd_mgr* find_bdd_mgr() { return ref->find_bdd_mgr(); }
     node_ref botsink();
     node_ref topsink();
