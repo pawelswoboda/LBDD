@@ -23,6 +23,12 @@ namespace BDD {
         bool is_terminal() const { return lo == hi; }
 
         bool operator==(const bdd_instruction& o) const { return lo == o.lo && hi == o.hi && index == o.index; }
+        bool operator!=(const bdd_instruction& o) const { return !(*this == o); }
+
+        // temporary values for building up
+        constexpr static size_t temp_botsink_index = std::numeric_limits<size_t>::max();
+        constexpr static size_t temp_topsink_index = std::numeric_limits<size_t>::max()-1;
+        constexpr static size_t temp_undefined_index = std::numeric_limits<size_t>::max()-2;
     };
 
     struct bdd_instruction_hasher {
@@ -69,13 +75,22 @@ namespace BDD {
             bool operator!=(const bdd_collection_node& o) const;
             bdd_collection_node operator=(const bdd_collection_node& o);
 
+            // for rerouting
+            void set_lo_arc(bdd_collection_node& node);
+            void set_hi_arc(bdd_collection_node& node);
+            void set_hi_to_0_terminal();
+            void set_hi_to_1_terminal();
+            void set_lo_to_0_terminal();
+            void set_lo_to_1_terminal();
+
         private:
             size_t i; 
             const bdd_collection_entry& bce;
     };
 
     // convenience class to make bdd_collection bdds behave similary to node_ref
-    class bdd_collection_entry {
+    class bdd_collection_entry 
+    {
         friend class bdd_collection_node;
         public:
             bdd_collection_entry(const size_t _bdd_nr, bdd_collection& _bdd_col);
@@ -109,12 +124,18 @@ namespace BDD {
             template<typename BDD_ITERATOR>
                 size_t bdd_and(BDD_ITERATOR bdd_begin, BDD_ITERATOR bdd_end, const size_t node_limit = std::numeric_limits<size_t>::max());
 
+            // compute disjunction 
+            size_t bdd_or(const size_t i, const size_t j);
+            template<typename VAR_MAP>
+                size_t bdd_or_var(const size_t i, const VAR_MAP& positive_variables, const VAR_MAP& negative_variables);
+
             size_t add_bdd(node_ref bdd);
             node_ref export_bdd(bdd_mgr& mgr, const size_t bdd_nr) const;
             size_t nr_bdds() const { return bdd_delimiters.size()-1; }
             size_t size() const { return nr_bdds(); }
             size_t nr_bdd_nodes(const size_t bdd_nr) const;
             size_t nr_bdd_nodes(const size_t bdd_nr, const size_t variable) const;
+            size_t offset(const bdd_instruction& instr) const;
             template<typename ITERATOR>
                 bool evaluate(const size_t bdd_nr, ITERATOR var_begin, ITERATOR var_end) const;
             template<typename ITERATOR>
@@ -133,6 +154,11 @@ namespace BDD {
             auto get_bdd_instructions(const size_t bdd_nr) const { return std::make_pair(bdd_instructions.begin() + bdd_delimiters[bdd_nr], bdd_instructions.begin() + bdd_delimiters[bdd_nr+1]); }
             auto get_reverse_bdd_instructions(const size_t bdd_nr) const { return std::make_pair(bdd_instructions.begin() + bdd_delimiters[bdd_nr], bdd_instructions.begin() + bdd_delimiters[bdd_nr+1]); }
 
+            // for constructing a new bdd
+            size_t new_bdd();
+            bdd_collection_node add_bdd_node(const size_t var);
+            void close_bdd();
+
         private:
             size_t bdd_and_impl(const size_t i, const size_t j, const size_t node_limit);
             template<size_t N>
@@ -142,6 +168,8 @@ namespace BDD {
             size_t splitting_variable(const bdd_instruction& k, const bdd_instruction& l) const;
             size_t add_bdd_impl(node_ref bdd);
             bool is_bdd(const size_t i) const;
+            // bring last DAG into BDD-form
+            void reduce();
 
             std::vector<bdd_instruction> bdd_instructions;
             std::vector<size_t> bdd_delimiters = {0};
@@ -341,6 +369,52 @@ namespace BDD {
                 default: throw std::runtime_error("generic and not implemented.");
             }
         }
+
+    template<typename VAR_SET>
+        size_t bdd_collection::bdd_or_var(const size_t i, const VAR_SET& positive_variables, const VAR_SET& negative_variables)
+        {
+            assert(i < nr_bdds());
+            // copy old bdd instructions
+            for(size_t idx=bdd_delimiters[i]; idx<bdd_delimiters[i+1]; ++idx)
+            {
+                bdd_instruction instr = bdd_instructions[idx];
+                if(!instr.is_terminal())
+                {
+                    instr.lo += bdd_delimiters.back() - bdd_delimiters[i];
+                    instr.hi += bdd_delimiters.back() - bdd_delimiters[i];
+                }
+                bdd_instructions.push_back(instr);
+            }
+            bdd_delimiters.push_back(bdd_instructions.size());
+
+            assert(bdd_instructions.back().is_terminal());
+            assert(bdd_instructions[bdd_instructions.size()-2].is_terminal());
+            assert(bdd_instructions[bdd_instructions.size()-1] != bdd_instructions[bdd_instructions.size()-2]);
+
+            const size_t botsink_index = bdd_instructions[bdd_instructions.size()-1].is_botsink() ? bdd_instructions.size()-1 : bdd_instructions.size()-2;
+            assert(bdd_instructions[botsink_index].is_botsink());
+            const size_t topsink_index = bdd_instructions[bdd_instructions.size()-1].is_topsink() ? bdd_instructions.size()-1 : bdd_instructions.size()-2;
+            assert(bdd_instructions[topsink_index].is_topsink());
+            assert(botsink_index != topsink_index);
+
+            // reroute arcs to topsink for instructions that cover positive or negative variables
+            const size_t new_bdd_nr = bdd_delimiters.size()-2;
+            for(size_t idx=bdd_delimiters[new_bdd_nr]; idx<bdd_delimiters[new_bdd_nr+1]; ++idx)
+            {
+                auto& instr = bdd_instructions[idx];
+                if(instr.is_terminal())
+                    continue;
+                if(positive_variables.count(instr.index) > 0)
+                    instr.hi = topsink_index; 
+                if(negative_variables.count(instr.index) > 0)
+                    instr.lo = topsink_index; 
+            }
+
+            reduce(); 
+            assert(is_bdd(new_bdd_nr));
+            return new_bdd_nr;
+        }
+
 
     template<typename ITERATOR>
         void bdd_collection_entry::rebase(ITERATOR var_map_begin, ITERATOR var_map_end) 

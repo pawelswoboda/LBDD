@@ -49,7 +49,9 @@ namespace BDD {
                 node_ref xor_rec(ITERATOR nodes_begin, ITERATOR nodes_end);
             node_ref xor_rec(node_ref f, node_ref g);
 
+            // f is if-condition, g is for 1-outcome, h is for lo outcome
             node_ref ite_rec(node_ref f, node_ref g, node_ref h);
+            //node_ref ite_non_rec(node_ref f, node_ref g, node_ref h, std::stack<>& stack);
 
             // make a copy of bdd rooted at node to variables given
             // assume variable map is given by hash

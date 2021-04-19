@@ -6,6 +6,13 @@
 
 namespace BDD {
 
+    size_t bdd_collection::offset(const bdd_instruction& instr) const
+    {
+        assert(std::distance(&bdd_instructions[0], &instr) < bdd_instructions.size());
+        assert(std::distance(&bdd_instructions[0], &instr) >= 0);
+        return std::distance(&bdd_instructions[0], &instr); 
+    }
+
     size_t bdd_collection::bdd_and(const size_t i, const size_t j, const size_t node_limit)
     {
         assert(i < nr_bdds());
@@ -408,6 +415,8 @@ namespace BDD {
             return false;
         if(!bdd_instructions[bdd_delimiters[bdd_nr+1]-2].is_terminal())
             return false;
+        if(bdd_instructions[bdd_delimiters[bdd_nr+1]-2] == bdd_instructions[bdd_delimiters[bdd_nr+1]-1])
+            return false;
 
         std::unordered_set<bdd_instruction, bdd_instruction_hasher> bdd_nodes;
         for(size_t i=bdd_delimiters[bdd_nr]; i<bdd_delimiters[bdd_nr+1]-2; ++i)
@@ -438,6 +447,83 @@ namespace BDD {
         return true;
     }
 
+    void bdd_collection::reduce()
+    {
+        assert(nr_bdds() > 0);
+        const size_t bdd_nr = nr_bdds() - 1;
+
+        std::vector<char> remove(nr_bdd_nodes(bdd_nr), false);
+        
+        // remove nodes with identical lo and hi arcs
+        for(std::ptrdiff_t idx=bdd_delimiters[bdd_nr+1]-3; idx>=bdd_delimiters[bdd_nr]; --idx)
+        {
+            bdd_instruction& instr = bdd_instructions[idx];
+            bdd_instruction& lo = bdd_instructions[instr.lo];
+            bdd_instruction& hi = bdd_instructions[instr.hi];
+            if(!lo.is_terminal() && lo.lo == lo.hi)
+                instr.lo = bdd_instructions[lo.lo].lo;
+            if(!hi.is_terminal() && hi.lo == hi.hi)
+                instr.hi = bdd_instructions[hi.hi].hi;
+            if(instr.lo == instr.hi)
+            {
+                std::cout << "remove instr due to same lo and hi\n";
+                remove[idx - bdd_delimiters[bdd_nr]] = true;
+            }
+        }
+
+        // remove isomorphic subgraphs
+        std::unordered_map<bdd_instruction, size_t, bdd_instruction_hasher> bdd_map;
+        bdd_map.insert({bdd_instructions[bdd_delimiters[bdd_nr+1]-1], bdd_delimiters[bdd_nr+1]-1});
+        bdd_map.insert({bdd_instructions[bdd_delimiters[bdd_nr+1]-2], bdd_delimiters[bdd_nr+1]-2});
+        for(std::ptrdiff_t idx=bdd_delimiters[bdd_nr+1]-3; idx>=bdd_delimiters[bdd_nr]; --idx)
+        {
+            if(remove[idx - bdd_delimiters[bdd_nr]])
+                continue;
+            bdd_instruction& instr = bdd_instructions[idx];
+            auto it = bdd_map.find(instr);
+            if(it == bdd_map.end())
+                bdd_map.insert({instr, idx});
+            else
+            {
+                remove[idx - bdd_delimiters[bdd_nr]] = true;
+                std::cout << "remove due to isomorphic subgraphs\n";
+            }
+            assert(bdd_map.count(bdd_instructions[instr.lo]) > 0);
+            assert(bdd_map.count(bdd_instructions[instr.hi]) > 0);
+            instr.lo = bdd_map.find(bdd_instructions[instr.lo])->second;
+            instr.hi = bdd_map.find(bdd_instructions[instr.hi])->second;
+        }
+
+        // compactify: remove unused instructions and move remaining ones to contiguous placement
+        const size_t nr_remaining_instructions = std::count(remove.begin(), remove.end(), false);
+        std::vector<bdd_instruction> new_bdd_instructions;
+        new_bdd_instructions.reserve(nr_remaining_instructions);
+        std::vector<size_t> address_delta;
+        // TODO: counted correctly?
+        address_delta.reserve(nr_bdd_nodes(bdd_nr));
+        address_delta.push_back(0);
+        std::partial_sum(remove.begin(), remove.end()-1, std::back_inserter(address_delta));
+            
+        for(size_t idx=bdd_delimiters[bdd_nr]; idx<bdd_delimiters[bdd_nr+1]-2; ++idx)
+        {
+            if(remove[idx - bdd_delimiters[bdd_nr]])
+                continue;
+            bdd_instruction instr = bdd_instructions[idx];
+            instr.lo -= address_delta[instr.lo-bdd_delimiters[bdd_nr]];
+            instr.hi -= address_delta[instr.hi-bdd_delimiters[bdd_nr]]; 
+            new_bdd_instructions.push_back(instr);
+        }
+        new_bdd_instructions.push_back(bdd_instructions[bdd_delimiters[bdd_nr+1]-2]);
+        new_bdd_instructions.push_back(bdd_instructions[bdd_delimiters[bdd_nr+1]-1]);
+        std::cout << "new bdd has " << new_bdd_instructions.size() << " nodes\n";
+
+        bdd_instructions.resize(bdd_delimiters[bdd_nr]);
+        for(const auto instr : new_bdd_instructions)
+            bdd_instructions.push_back(instr);
+        bdd_delimiters.back() = bdd_instructions.size(); 
+        assert(is_bdd(bdd_nr));
+    }
+
     std::vector<size_t> bdd_collection::variables(const size_t bdd_nr) const
     {
         assert(bdd_nr < nr_bdds());
@@ -458,6 +544,55 @@ namespace BDD {
     bdd_collection_entry bdd_collection::operator[](const size_t bdd_nr)
     {
         return bdd_collection_entry(bdd_nr, *this);
+    }
+
+    size_t bdd_collection::new_bdd()
+    {
+        bdd_delimiters.push_back(bdd_instructions.size());
+        return bdd_delimiters.size()-2;
+    }
+
+    bdd_collection_node bdd_collection::add_bdd_node(const size_t var)
+    {
+        bdd_instruction instr;
+        instr.index = var;
+        instr.lo = bdd_instruction::temp_undefined_index;
+        instr.hi = bdd_instruction::temp_undefined_index;
+        bdd_instructions.push_back(instr);
+        return bdd_collection_node(bdd_instructions.size()-1, bdd_collection_entry(bdd_delimiters.size()-2, *this));
+    }
+
+    void bdd_collection::close_bdd()
+    {
+        // add top and botsink
+        bdd_instructions.push_back(bdd_instruction::topsink());
+        bdd_instructions.push_back(bdd_instruction::botsink());
+
+        // go over previous bdd instructions and reroute topsink and botsink entries to correct entries
+        for(size_t idx=bdd_delimiters[bdd_delimiters.size()-2]; idx<bdd_delimiters[bdd_delimiters.size()-1]-2; ++idx)
+        {
+            auto& instr = bdd_instructions[idx];
+
+            if(instr.lo == bdd_instruction::temp_undefined_index)
+                throw std::runtime_error("bdd lo arc not set");
+            else if(instr.lo == bdd_instruction::temp_topsink_index)
+                instr.lo = bdd_instructions.size()-2;
+            else if(instr.lo == bdd_instruction::temp_botsink_index)
+                instr.lo = bdd_instructions.size()-1;
+            else
+                assert(instr.lo < bdd_instructions.size() && instr.lo >= bdd_delimiters[bdd_delimiters.size()-2]);
+
+            if(instr.hi == bdd_instruction::temp_undefined_index)
+                throw std::runtime_error("bdd hi arc not set");
+            else if(instr.hi == bdd_instruction::temp_topsink_index)
+                instr.hi = bdd_instructions.size()-2;
+            else if(instr.hi == bdd_instruction::temp_botsink_index)
+                instr.hi = bdd_instructions.size()-1;
+            else
+                assert(instr.hi < bdd_instructions.size() && instr.hi >= bdd_delimiters[bdd_delimiters.size()-2]); 
+        }
+
+        bdd_delimiters.back() = bdd_instructions.size();
     }
 
     //////////////////////////
@@ -567,6 +702,42 @@ namespace BDD {
     bool bdd_collection_node::is_terminal() const
     {
         return bce.bdd_col.bdd_instructions[i].is_terminal();
+    }
+
+    void bdd_collection_node::set_lo_arc(bdd_collection_node& node)
+    {
+        auto& instr = bce.bdd_col.bdd_instructions[i];
+        instr.lo = node.i;
+    }
+
+    void bdd_collection_node::set_hi_arc(bdd_collection_node& node)
+    {
+        auto& instr = bce.bdd_col.bdd_instructions[i];
+        instr.hi = node.i;
+    }
+
+    void bdd_collection_node::set_lo_to_0_terminal()
+    {
+        auto& instr = bce.bdd_col.bdd_instructions[i];
+        instr.lo = bce.botsink().i;
+    }
+
+    void bdd_collection_node::set_lo_to_1_terminal()
+    {
+        auto& instr = bce.bdd_col.bdd_instructions[i];
+        instr.lo = bce.topsink().i;
+    }
+
+    void bdd_collection_node::set_hi_to_0_terminal()
+    {
+        auto& instr = bce.bdd_col.bdd_instructions[i];
+        instr.hi = bce.botsink().i;
+    }
+
+    void bdd_collection_node::set_hi_to_1_terminal()
+    {
+        auto& instr = bce.bdd_col.bdd_instructions[i];
+        instr.hi = bce.topsink().i;
     }
 
     bdd_collection_node bdd_collection_node::next_postorder() const

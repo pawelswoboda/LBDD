@@ -57,3 +57,7 @@ add_test(test_bdd_exactly_one_solution test_bdd_exactly_one_solution)
 add_executable(test_bdd_collection_and test_bdd_collection_and.cpp)
 target_link_libraries(test_bdd_collection_and LBDD)
 add_test(test_bdd_collection_and test_bdd_collection_and)
+
+add_executable(test_bdd_collection_or_var test_bdd_collection_or_var.cpp)
+target_link_libraries(test_bdd_collection_or_var LBDD)
+add_test(test_bdd_collection_and test_bdd_collection_and)

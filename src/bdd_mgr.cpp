@@ -1,6 +1,7 @@
 #include "bdd_mgr.h"
 #include "bdd_collection.h"
 #include <cassert>
+#include <stack>
 
 namespace BDD {
 
@@ -304,6 +305,87 @@ namespace BDD {
         return node_ref(r); 
     }
 
+    /*
+    node_ref bdd_mgr::ite_non_rec(node_ref f, node_ref g, node_ref h, std::stack<>& stack2)
+    {
+        using instruction_type = unsigned char;
+
+        static constexpr instruction_type xor_instr = 0;
+        static constexpr instruction_type or_instr = 1;
+        static constexpr instruction_type and_instr = 2;
+        static constexpr instruction_type ite_instr = 3;
+
+        struct instruction {
+            instruction_type instr;
+            node_ref f;
+            node_ref g;
+            node_ref h; 
+        };
+
+        std::stack<instruction> stack;
+        std::stack<> result_stack;
+
+        while(!stack.empty())
+        {
+            const instruction_type instr = stack.top().instr;
+            node_ref f = stack.top().f;
+            node_ref g = stack.top().g;
+            node_ref h = stack.top().h;
+            stack.pop();
+
+        }
+
+        // trivial cases
+        if(f.is_topsink())
+            return g;
+        if(f.is_botsink())
+            return h;
+
+        if(g == f || g.is_topsink())
+            return or_rec(f,h);
+        if(h == f || h.is_botsink())
+            return and_rec(f,g);
+
+        if(g == h)
+            return g;
+
+        if(g.is_botsink() && h.is_topsink())
+            return xor_rec(node_ref(get_node_cache().topsink()), f);
+
+        node* m = memo_.cache_lookup(f.ref, g.ref, h.ref);
+        if(m != nullptr)
+            return node_ref(m);
+
+        var& vf = vars[f.variable()];
+        var& vg = g.is_terminal() ? vars.back() : vars[g.variable()];
+        var& vh = h.is_terminal() ? vars.back() : vars[h.variable()];
+
+        //var& v = *std::min({&vf,&vg,&vh}); // compilation error on gcc-8.1?
+        var& v = *std::min(std::min(&vf,&vg),&vh);
+
+        node_ref r0 = ite_rec(
+                (&vf == &v ? f.low() : f),
+                (&vg == &v ? g.low() : g),
+                (&vh == &v ? h.low() : h)
+                );
+        assert(r0.ref != nullptr);
+
+        node_ref r1 = ite_rec(
+                (&vf == &v ? f.high() : f),
+                (&vg == &v ? g.high() : g),
+                (&vh == &v ? h.high() : h)
+                );
+        assert(r1.ref != nullptr);
+
+        node* r = v.unique_find(r0.ref, r1.ref);
+        assert(r != nullptr);
+        memo_.cache_insert(f.ref, g.ref, h.ref, r);
+        return node_ref(r); 
+
+
+    }
+*/
+
     void bdd_mgr::collect_garbage()
     {
         for(size_t i=0; i<vars.size(); ++i)
@@ -316,10 +398,34 @@ namespace BDD {
     {
         assert(bdd_nr < bdd_col.nr_bdds());
         auto [bdd_begin, bdd_end] = bdd_col.get_bdd_instructions(bdd_nr);
-        for(auto bdd_it = bdd_end; bdd_it != bdd_begin; --bdd_it)
+        std::unordered_map<size_t, node_ref> bdd_map;
+        for(auto bdd_it=bdd_end; bdd_it!=bdd_begin; --bdd_it)
         {
+            const auto& bdd = *std::prev(bdd_it);
+            if(bdd.is_botsink())
+            {
+                bdd_map.insert({bdd_col.offset(bdd), botsink()}); 
+            }
+            else if(bdd.is_topsink())
+            {
+                bdd_map.insert({bdd_col.offset(bdd), topsink()}); 
+            }
+            else
+            { 
+                assert(bdd_col.offset(bdd) < 1000); // TODO: remove
+                assert(bdd_map.count(bdd.lo) > 0);
+                node_ref lo = bdd_map.find(bdd.lo)->second;
 
+                assert(bdd_map.count(bdd.hi) > 0);
+                node_ref hi = bdd_map.find(bdd.hi)->second;
+
+                node_ref node = ite_rec(projection(bdd.index), hi, lo);
+
+                bdd_map.insert({bdd_col.offset(bdd), node});
+            }
         }
+        assert(bdd_map.count(bdd_col.offset(*bdd_begin)) > 0);
+        return bdd_map.find(bdd_col.offset(*bdd_begin))->second;
     }
 
 
